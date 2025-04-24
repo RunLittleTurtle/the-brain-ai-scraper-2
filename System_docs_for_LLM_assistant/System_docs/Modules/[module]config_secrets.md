@@ -145,34 +145,34 @@ This module is **fundamental (P0)** and should be one of the first implemented.
 
 ### 1. Core Logic and Exceptions
 
-- **1.1 Custom Exceptions in `exceptions.py`** `[To_Do_Next]`
+- **1.1 Custom Exceptions in `exceptions.py`** `[Human_Review]`
   Create `SecretNotFoundError` (perhaps inheriting from `KeyError` or `ValueError`).
-- **1.2 `.env` Loading in `core_secrets.py` (or `__init__.py`)** `[To_Do_Next]`
+- **1.2 `.env` Loading in `core_secrets.py` (or `__init__.py`)** `[Human_Review]`
   Implement a function (e.g., `load_configuration`) using `load_dotenv()` from `python-dotenv`. Ensure it doesn't reload unnecessarily and handles the absence of the `.env` file gracefully (this is normal in production). Call this function upon module import or very early.
-- **1.3 Access Functions in `core_secrets.py`** `[To_Do_Next]`
+- **1.3 Access Functions in `core_secrets.py`** `[Human_Review]`
   Implement `get_config(key, default=None)` and `get_secret(key, default=None)`. They should simply wrap `os.getenv(key, default)`. `get_secret` might add warning or error logic if the key is absent and no `default` is provided, based on the decided error handling policy. Export these functions in `__init__.py`.
 
 ### 2. CLI Interface (For Local `.env` Management)
 
-- **2.1 `brain config set` command in `cli.py`** `[To_Do_Next]`
+- **2.1 `brain config set` command in `cli.py`** `[Human_Review]`
   Use Typer. Must read the `.env` file, add/modify the `KEY=VALUE` line, and rewrite the file. Handle cases where the file doesn't exist. Consider using existing libraries for modifying `.env` files (like `python-dotenv`'s own manipulation functions if suitable) or simple line reading/writing logic.
-- **2.2 `brain config list` command in `cli.py`** `[To_Do_Next]`
+- **2.2 `brain config list` command in `cli.py`** `[Human_Review]`
   Read the `.env` file, iterate through keys, and display `KEY=masked_value` for keys containing terms like `KEY`, `SECRET`, `PASSWORD`, `TOKEN` (list to define), and `KEY=value` for others.
-- **2.3 `brain config check` command in `cli.py`** `[To_Do_Next]`
+- **2.3 `brain config check` command in `cli.py`** `[Human_Review]`
   Use Typer. Implement by calling `os.getenv(KEY)` and checking if the result is not `None`. Print a clear confirmation message.
-- **2.4 `brain config unset` command in `cli.py`** `[Backlog]`
+- **2.4 `brain config unset` command in `cli.py`** `[Human_Review]`
   Read the `.env` file, filter out the line corresponding to `KEY`, and rewrite the file without that line.
 
 ### 3. Validation and Tests
 
-- **3.1 Unit Tests in `tests/test_core_secrets.py`** `[To_Do_Next]`
+- **3.1 Unit Tests in `tests/test_core_secrets.py`** `[Human_Review]`
   Test `get_config`/`get_secret` by simulating environment variables (using `unittest.mock.patch.dict` or `pytest-env`). Test cases where the key exists, doesn't exist, with and without `default`. Test loading (mock `load_dotenv`). Test exceptions.
-- **3.2 CLI Tests (more integration)** `[Backlog]`
+- **3.2 CLI Tests (more integration)** `[Human_Review]`
   Test the CLI commands by manipulating a temporary `.env` file to verify `set`, `list` (with masking), `check`, and `unset` operations.
 
 ### 4. Documentation
 
-- **4.1 Docstrings** `[Backlog]`
+- **4.1 Docstrings** `[Human_Review]`
   Add clear docstrings to functions and CLI commands.
 
 ## Secret Management Rules
