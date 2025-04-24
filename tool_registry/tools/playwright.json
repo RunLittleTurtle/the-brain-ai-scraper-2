@@ -1,0 +1,29 @@
+{
+  "name": "playwright",
+  "description": "A modern browser automation framework developed by Microsoft. Allows control of Chromium, Firefox, and WebKit via a unified Python API. Ideal for complex websites requiring JavaScript execution, user interactions, and managing isolated browser contexts.",
+  "tool_type": "browser",
+  "package_name": "playwright",
+  "pip_install_command": "pip install playwright==1.40.0 && playwright install --with-deps",
+  "execution_mode": "async",
+  "capabilities": [
+    "javascript_rendering",
+    "spa_support",
+    "headless_mode",
+    "headed_mode",
+    "screenshot",
+    "pdf_generation",
+    "network_interception",
+    "user_input_simulation",
+    "form_submission",
+    "iframe_handling",
+    "shadow_dom_support"
+  ],
+  "compatibilities": [
+    "type:parser",
+    "type:captcha_solver",
+    "type:proxy_manager",
+    "type:anti_bot_service"
+  ],
+  "incompatible_with": ["selenium", "undetected-chromedriver"],
+  "required_config": []
+}

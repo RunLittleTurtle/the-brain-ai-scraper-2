@@ -1,0 +1,25 @@
+{
+  "name": "scraperapi",
+  "description": "A proxy and anti-bot service that handles IP rotation, browser fingerprinting, and CAPTCHA solving. Simplifies scraping of sites with advanced protection measures through a simple API.",
+  "tool_type": "anti_bot_service",
+  "package_name": "scraperapi",
+  "pip_install_command": "pip install scraperapi",
+  "execution_mode": "sync",
+  "capabilities": [
+    "proxy_rotation",
+    "browser_fingerprinting",
+    "cloudflare_bypass",
+    "captcha_handling",
+    "session_management",
+    "javascript_rendering",
+    "geolocation_spoofing"
+  ],
+  "compatibilities": [
+    "type:browser",
+    "type:http_client"
+  ],
+  "incompatible_with": [],
+  "required_config": [
+    "SCRAPERAPI_KEY"
+  ]
+}

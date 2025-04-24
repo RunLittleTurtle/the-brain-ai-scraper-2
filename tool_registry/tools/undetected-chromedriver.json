@@ -1,0 +1,25 @@
+{
+  "name": "undetected-chromedriver",
+  "description": "A specialized selenium ChromeDriver implementation that helps to prevent detection from anti-bot systems. Patches the standard ChromeDriver to bypass common detection methods used by modern websites.",
+  "tool_type": "browser",
+  "package_name": "undetected-chromedriver",
+  "pip_install_command": "pip install undetected-chromedriver>=3.5.0",
+  "execution_mode": "sync",
+  "capabilities": [
+    "anti_detection",
+    "javascript_rendering",
+    "headless_mode",
+    "browser_fingerprinting",
+    "anti_bot_bypass",
+    "user_input_simulation",
+    "form_submission"
+  ],
+  "compatibilities": [
+    "selenium",
+    "type:parser"
+  ],
+  "incompatible_with": [
+    "playwright"
+  ],
+  "required_config": []
+}

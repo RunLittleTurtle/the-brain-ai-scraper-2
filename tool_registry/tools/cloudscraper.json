@@ -1,0 +1,22 @@
+{
+  "name": "cloudscraper",
+  "description": "A specialized Python module designed to bypass Cloudflare's anti-bot protection and other similar protections. Acts as a wrapper around the Requests library, making it easy to integrate into existing code.",
+  "tool_type": "anti_bot_service",
+  "package_name": "cloudscraper",
+  "pip_install_command": "pip install cloudscraper>=1.2.71",
+  "execution_mode": "sync",
+  "capabilities": [
+    "cloudflare_bypass",
+    "browser_fingerprinting", 
+    "anti_bot_bypass",
+    "http_request",
+    "cookie_management",
+    "session_management",
+    "header_management"
+  ],
+  "compatibilities": [
+    "type:parser"
+  ],
+  "incompatible_with": [],
+  "required_config": []
+}

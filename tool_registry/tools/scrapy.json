@@ -1,0 +1,27 @@
+{
+  "name": "scrapy",
+  "description": "A comprehensive asynchronous web crawling and scraping framework for Python. Provides a complete architecture for managing requests, handling responses, extracting data, and storing results. Ideal for large-scale crawling operations.",
+  "tool_type": "framework",
+  "package_name": "scrapy",
+  "pip_install_command": "pip install scrapy>=2.8.0",
+  "execution_mode": "async",
+  "capabilities": [
+    "crawling",
+    "request_management",
+    "response_parsing",
+    "pipeline_processing",
+    "spider_management",
+    "middleware_support",
+    "javascript_rendering",
+    "proxy_rotation",
+    "user_agent_rotation",
+    "content_extraction"
+  ],
+  "compatibilities": [
+    "parsel",
+    "type:proxy_manager",
+    "type:anti_bot_service"
+  ],
+  "incompatible_with": [],
+  "required_config": []
+}

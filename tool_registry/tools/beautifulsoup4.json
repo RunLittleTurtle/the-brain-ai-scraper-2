@@ -1,0 +1,24 @@
+{
+  "name": "beautifulsoup4",
+  "description": "A popular Python library for extracting data from HTML and XML files. Creates a parse tree for parsed content that allows for easy navigation, searching, and modification of the parse tree. Essential for data extraction.",
+  "tool_type": "parser",
+  "package_name": "beautifulsoup4",
+  "pip_install_command": "pip install beautifulsoup4[lxml]==4.12.2",
+  "execution_mode": "sync",
+  "capabilities": [
+    "html_parsing",
+    "xml_parsing",
+    "malformed_markup_handling",
+    "css_selectors",
+    "tag_navigation",
+    "attribute_extraction",
+    "text_extraction",
+    "encoding_detection"
+  ],
+  "compatibilities": [
+    "type:browser",
+    "type:http_client"
+  ],
+  "incompatible_with": [],
+  "required_config": []
+}

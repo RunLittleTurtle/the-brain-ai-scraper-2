@@ -1,0 +1,29 @@
+{
+  "name": "selenium",
+  "description": "The industry standard browser automation framework. Supports multiple browsers through WebDriver interfaces. Extensive community support and widespread adoption for web automation, testing, and scraping.",
+  "tool_type": "browser",
+  "package_name": "selenium",
+  "pip_install_command": "pip install selenium>=4.10.0",
+  "execution_mode": "sync",
+  "capabilities": [
+    "javascript_rendering",
+    "spa_support",
+    "headless_mode",
+    "headed_mode",
+    "screenshot",
+    "network_interception",
+    "user_input_simulation",
+    "form_submission",
+    "iframe_handling",
+    "wait_conditions"
+  ],
+  "compatibilities": [
+    "type:parser",
+    "type:captcha_solver",
+    "type:proxy_manager",
+    "type:anti_bot_service",
+    "undetected-chromedriver"
+  ],
+  "incompatible_with": ["playwright"],
+  "required_config": []
+}

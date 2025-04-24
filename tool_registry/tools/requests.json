@@ -1,0 +1,26 @@
+{
+  "name": "requests",
+  "description": "The standard Python HTTP library for making requests. Simple and intuitive interface for HTTP/1.1 requests with support for custom headers, form data, multipart file uploads, cookies, and proxy configuration.",
+  "tool_type": "http_client",
+  "package_name": "requests",
+  "pip_install_command": "pip install requests>=2.28.0",
+  "execution_mode": "sync",
+  "capabilities": [
+    "http_request",
+    "https_support",
+    "cookie_management",
+    "header_management",
+    "session_management",
+    "timeout_handling",
+    "proxy_support",
+    "authentication_support",
+    "form_data_handling"
+  ],
+  "compatibilities": [
+    "type:parser",
+    "type:anti_bot_service",
+    "type:proxy_manager"
+  ],
+  "incompatible_with": [],
+  "required_config": []
+}

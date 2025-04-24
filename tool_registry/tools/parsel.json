@@ -1,0 +1,24 @@
+{
+  "name": "parsel",
+  "description": "A library for extracting data from HTML and XML using CSS and XPath selectors. It's the selector library used by Scrapy, making it a natural fit and a good alternative to BeautifulSoup's selector methods.",
+  "tool_type": "parser",
+  "package_name": "parsel",
+  "pip_install_command": "pip install parsel>=1.8.1",
+  "execution_mode": "sync",
+  "capabilities": [
+    "html_parsing",
+    "xml_parsing",
+    "css_selectors",
+    "xpath_selectors",
+    "regex_extraction",
+    "text_extraction",
+    "attribute_extraction"
+  ],
+  "compatibilities": [
+    "type:browser",
+    "type:http_client",
+    "scrapy"
+  ],
+  "incompatible_with": [],
+  "required_config": []
+}
