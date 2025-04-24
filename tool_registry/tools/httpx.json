@@ -3,7 +3,7 @@
   "description": "A modern HTTP client for Python with both synchronous and native asynchronous APIs. HTTPX provides a Requests-compatible API with support for HTTP/2, connection pooling, and timeouts. Perfect for FastAPI backend tasks.",
   "tool_type": "http_client",
   "package_name": "httpx",
-  "pip_install_command": "pip install httpx>=0.23.0",
+  "pip_install_command": "pip install httpx==0.28.1",
   "execution_mode": "async",
   "capabilities": [
     "http_request",

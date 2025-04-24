@@ -3,7 +3,7 @@
   "description": "The industry standard browser automation framework. Supports multiple browsers through WebDriver interfaces. Extensive community support and widespread adoption for web automation, testing, and scraping.",
   "tool_type": "browser",
   "package_name": "selenium",
-  "pip_install_command": "pip install selenium>=4.10.0",
+  "pip_install_command": "pip install selenium==4.29.0",
   "execution_mode": "sync",
   "capabilities": [
     "javascript_rendering",

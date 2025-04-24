@@ -238,35 +238,35 @@ Chaque outil dans `tools.json` (qui est une liste `[...]` de ces objets) **doit*
 Ce module constitue la base pour gérer les outils de scraping et d’automatisation web dans "The Brain". Les tâches suivantes sont organisées par domaine de fonctionnalité pour fournir un guide clair au LLM tout en lui laissant une certaine liberté d’implémentation. L’objectif est de construire un système robuste permettant d’empiler les outils comme des "Lego" grâce à des règles de compatibilité bien définies.
 
 ### 1. Modèles de Données et Validation
-- **1.1 Définition des Modèles Pydantic dans `models.py`** `[To_Do_Next]`  
+- **1.1 Définition des Modèles Pydantic dans `models.py`** `[LLM_Test_Complete]`  
   Développer le modèle Pydantic `ToolMetadata` selon le schéma JSON fourni (incluant `name`, `tool_type`, `capabilities`, `compatibilities`, etc.), pour valider les métadonnées des outils. Inclure des validateurs si nécessaire pour garantir l’unicité des noms ou la validité des catégories.
-- **1.2 Exceptions Personnalisées dans `exceptions.py`** `[To_Do_Next]`  
+- **1.2 Exceptions Personnalisées dans `exceptions.py`** `[LLM_Test_Complete]`  
   Créer des classes d’exceptions spécifiques comme `ToolNotFoundError`, `ToolValidationError`, ou `ToolExistsError` pour gérer les erreurs courantes liées aux outils.
 
 ### 2. Logique Principale du Registre
-- **2.1 Création de la Classe `ToolRegistry` dans `core_tool.py`** `[To_Do_Next]`  
+- **2.1 Création de la Classe `ToolRegistry` dans `core_tool.py`** `[LLM_Test_Complete]`  
   Implémenter une classe de base `ToolRegistry` pour gérer le registre des outils, incluant l’initialisation et les stubs pour le chargement/sauvegarde des données dans `tools.json`.
-- **2.2 Gestion du Stockage dans `core_tool.py`** `[To_Do_Next]`  
+- **2.2 Gestion du Stockage dans `core_tool.py`** `[LLM_Test_Complete]`  
   Développer les fonctions de chargement et de sauvegarde des outils depuis/vers un fichier `tools.json`, en gérant les cas d’erreur (fichier inexistant, format JSON invalide) et en validant les données avec le modèle Pydantic.
-- **2.3 Opérations CRUD dans `core_tool.py`** `[To_Do_Next]`  
+- **2.3 Opérations CRUD dans `core_tool.py`** `[LLM_Test_Complete]`  
   Implémenter les méthodes pour ajouter (`add_tool`), récupérer (`get_tool`), lister (`list_tools` avec filtres par type ou capacité), et supprimer (`remove_tool`) des outils dans le registre.
-- **2.4 Gestion des Compatibilités dans `core_tool.py`** `[Backlog]`  
+- **2.4 Gestion des Compatibilités dans `core_tool.py`** `[LLM_Test_Complete]`  
   Développer les fonctions `check_compatibility()` et `find_compatible_tools()` pour vérifier et suggérer des combinaisons d’outils basées sur le champ `compatibilities`, essentiel pour la logique "Lego" d’empilement des outils.
-- **2.5 Développement d’Adaptateurs dans `core_tool.py`** `[Backlog]`  
+- **2.5 Développement d’Adaptateurs dans `core_tool.py`** `[LLM_Test_Complete]`  
   Créer une interface générique ou un squelette pour les adaptateurs d’outils, permettant d’intégrer chaque outil dans un pipeline via une interface standardisée qui masque leurs spécificités.
 
 ### 3. Interface Utilisateur
-- **3.1 Interface CLI dans `cli.py`** `[Backlog]`  
+- **3.1 Interface CLI dans `cli.py`** `[LLM_Test_Complete]`  
   Implémenter les commandes CLI pour gérer les outils (ex. `brain tools add`, `list`, `remove`, `check-compat`), avec un formatage clair des sorties (JSON ou texte) et une gestion des erreurs utilisateur-friendly.
 
 ### 4. Validation et Tests
-- **4.1 Tests Unitaires dans `tests/`** `[Backlog]`  
+- **4.1 Tests Unitaires dans `tests/`** `[LLM_Test_Complete]`  
   Écrire des tests pour valider les modèles Pydantic, les opérations CRUD, et la logique de compatibilité, en utilisant des mocks pour éviter des dépendances externes (ex. lecture/écriture de fichier).
 
 ### 5. Documentation et Intégration
-- **5.1 Documentation des Classes et Méthodes** `[Backlog]`  
+- **5.1 Documentation des Classes et Méthodes** `[LLM_Test_Complete]`  
   Ajouter des docstrings détaillés pour chaque classe, méthode ou fonction, pour faciliter la maintenance et l’utilisation par d’autres modules.
-- **5.2 Intégration avec le Système Global** `[Backlog]`  
+- **5.2 Intégration avec le Système Global** `[LLM_Test_Complete]`  
   Exporter les fonctions principales dans `__init__.py` pour permettre une intégration facile avec le reste de "The Brain", en préparant des hooks si nécessaire pour des modules comme `pipeline_builder`.
 
 ## Règles de Compatibilité pour la Logique "Lego"

@@ -1,0 +1,8 @@
+{
+  "name": "test-tool",
+  "description": "A test tool for demonstration purposes",
+  "tool_type": "utility",
+  "package_name": "test-tool",
+  "execution_mode": "sync",
+  "capabilities": ["testing"]
+}
