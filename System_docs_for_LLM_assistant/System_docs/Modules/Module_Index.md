@@ -11,9 +11,9 @@
 
 ## Summary with Development Order
 
-1. **Priority P0: tool_registry/** - Plug-and-play catalogue of scraping tools. CLI Tests: `brain tools add playwright`, `brain tools list`. Status:  `Backlog`
+1. **Priority P0: tool_registry/** - Plug-and-play catalogue of scraping tools. CLI Tests: `brain tools add playwright`, `brain tools list`. Status: `[Human_Review]`
 
-2. **Priority P0: config_secrets/** - Centralised secrets & runtime switches. CLI Tests: `brain config set OPENAI_KEY`, `brain config list`. Status: `Backlog`
+2. **Priority P0: config_secrets/** - Centralised secrets & runtime switches. CLI Tests: `brain config set OPENAI_KEY`, `brain config list`. Status: `[Human_Review]`
 
 3. **Priority P0: cli/** - Thin CLI wrapper for user interaction & testing. CLI Tests: `brain scrape`, `brain tools list`. Status: `Backlog`
 
@@ -46,7 +46,7 @@
   - `brain tools add playwright` (add a tool with metadata, verify storage).
   - `brain tools list` (list all tools and their metadata, verify output format).
   - `brain tools check-compat playwright beautifulsoup4` (verify if tools are compatible, expect success or failure message).
-- **Status:** `Backlog`
+- **Status:** `[Human_Review]`
 - **Priority Rationale:** First module to develop (P0, Order 1) as it forms the foundation for cataloging tools and their compatibilities, critical for the "Lego" logic of dynamic selection by `pipeline_builder`.
 - **Development Completion Note:** Must be fully implemented (schema, CRUD operations, compatibility checks) and tested before moving to `config_secrets/`. Tests must confirm that tool metadata is correctly stored, retrievable, and compatibility logic works as expected.
 - **Dependencies:** None (standalone module, serves as foundation for others).
