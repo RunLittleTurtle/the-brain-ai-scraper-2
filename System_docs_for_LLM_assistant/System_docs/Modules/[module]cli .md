@@ -765,27 +765,27 @@ def test_scrape_command_mocked():
 
 ### Task Breakdown / Features to Develop
 
-#### 1. Core Framework [LLM_Test_Complete]
+#### 1. Core Framework `[Human_Review]`
 
 - ✅ Set up Typer application with global flags (--json, --verbose, --version)
 - ✅ Create standard output formatters (human-readable and JSON)
 - ✅ Implement basic error handling
 - ✅ Set up module directory structure
 
-#### 2. Tool Commands [LLM_Test_Complete]
+#### 2. Tool Commands `[Human_Review]`
 
 - ✅ Implement `brain tools list` wrapper around `tool_registry`
 - ✅ Implement `brain tools add` wrapper
 - ✅ Implement `brain tools remove` wrapper
 - ✅ Implement `brain tools check-compat` wrapper
 
-#### 3. Config Commands [LLM_Test_Complete]
+#### 3. Config Commands `[Human_Review]`
 
 - ✅ Implement `brain config set` wrapper around `config_secrets`
 - ✅ Implement `brain config list` wrapper
 - ✅ Implement `brain config unset` wrapper
 
-#### 4. Basic Scraping [LLM_Test_Complete]
+#### 4. Basic Scraping `[Human_Review]`
 
 - ✅ Implement `brain scrape` with structured arguments
 - ✅ Create mock implementations for future modules (intent_inference, pipeline_builder, executor)

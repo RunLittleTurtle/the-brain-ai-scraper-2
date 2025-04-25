@@ -27,7 +27,7 @@
   - `brain tools add playwright` (add a tool with metadata, verify storage).
   - `brain tools list` (list all tools and their metadata, verify output format).
   - `brain tools check-compat playwright beautifulsoup4` (verify if tools are compatible, expect success or failure message).
-- **Status:** `[Human_Review]`
+- **Status:**  `[Human_Done]`
 - **Priority Rationale:** First module to develop (P0, Order 1) as it forms the foundation for cataloging tools and their compatibilities, critical for the "Lego" logic of dynamic selection by `pipeline_builder`.
 - **Development Completion Note:** Must be fully implemented (schema, CRUD operations, compatibility checks) and tested before moving to `config_secrets/`. Tests must confirm that tool metadata is correctly stored, retrievable, and compatibility logic works as expected.
 - **Dependencies:** None (standalone module, serves as foundation for others).
@@ -63,7 +63,7 @@
 - Key CLI Regression Tests:
   - `brain config set OPENAI_KEY sk-xxx` (set a secret value, verify storage).
   - `brain config list` (list configured secrets, masked for security, verify output).
-- **Status:** `[Human_Review]`
+- **Status:** `[LLM_In_Progress]`
 - **Priority Rationale:** Second module (P0, Order 2) as it provides a secure mechanism to manage secrets (e.g., API keys for ScraperAPI), necessary for certain tools in `tool_registry`. Follows directly after `tool_registry` to prepare configurations before user interaction via `cli/`.
 - **Development Completion Note:** Must be fully implemented (local `.env` loading, basic getter function) and tested before moving to `cli/`. Tests must confirm that secrets can be set and retrieved correctly.
 - **Dependencies:** None directly, but supports `tool_registry` if tools have `required_config` tied to secrets.
@@ -92,7 +92,7 @@
   - `brain scrape --url <URL> --extract price,title` (structured input for scraping, verify intent submission).
   - `brain scrape "Get price from Amazon product page <URL>"` (free-text input, verify parsing).
   - `brain tools list` (list tools in registry, verify integration with `tool_registry`).
-- **Status:** Backlog.
+- **Status:**  `[LLM_In_Progress]`
 - **Priority Rationale:** Third module (P0, Order 3) as it provides the primary interface for users to interact with `tool_registry`, submit scraping intents, and manually test other modules. Follows `config_secrets` to allow secured configurations if needed.
 - **Development Completion Note:** Must be fully implemented (basic commands, support for structured and free-text inputs) and tested before moving to `progress_tracker/`. Tests must confirm that CLI can interact with `tool_registry` and accept diverse input formats.
 - **Dependencies:** Relies on `tool_registry/` for tool management commands and `config_secrets/` for secure configurations if applicable.

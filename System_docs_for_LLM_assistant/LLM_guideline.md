@@ -47,7 +47,7 @@
 -   **Await Instructions:** Once `[LLM_Test_Complete]`, **STOP**. Clearly notify the Human Operator and wait for their review or instructions via the chat/interface. Do NOT proceed automatically.
 -   Status Updates (Human Operator ONLY - Updates Checklist):
     -   `[LLM_Test_Complete]` -> `[Human_Review]` (Human starts review)
-    -   `[Human_Review]` -> `[Done]` (Human approves)
+    -   `[Human_Review]` -> `[Human_Done]` (Human approves)
     -   `[Human_Review]` -> `[LLM_In_Progress]` (Human rejects; provide feedback. Fix code.)
 
 ## 4. Key Project Documents (Reference These)
