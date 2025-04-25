@@ -11,27 +11,8 @@
 
 ## Summary with Development Order
 
-1. **Priority P0: tool_registry/** - Plug-and-play catalogue of scraping tools. CLI Tests: `brain tools add playwright`, `brain tools list`. Status: `[Human_Review]`
-
-2. **Priority P0: config_secrets/** - Centralised secrets & runtime switches. CLI Tests: `brain config set OPENAI_KEY`, `brain config list`. Status: `[Human_Review]`
-
-3. **Priority P0: cli/** - Thin CLI wrapper for user interaction & testing. CLI Tests: `brain scrape`, `brain tools list`. Status: `Backlog`
-
-4. **Priority P0: progress_tracker/** - Publish/subscribe run status & logs. CLI Tests: Simulated-events unit test. Status: `Backlog`
-
-5. **Priority P0: api_gateway/** - Single REST / MCP entrypoint. CLI Tests: `curl /healthz`, `brain --api ping`. Status: `Backlog`
-
-6. **Priority P1: intent_inference/** - Turn raw user input into structured `IntentSpec` JSON. CLI Tests: `brain infer "scrape price on Amazon"`. Status: `Backlog`
-
-7. **Priority P1: pipeline_builder/** - Dynamically build `PipelineSpec` JSON from `IntentSpec`. CLI Tests: `brain dryrun --show-spec`. Status: `Backlog`
-
-8. **Priority P2: executor/** - Execute pipelines and return results. CLI Tests: `brain runlocal <spec_id>`. Status: `Backlog`
-
-9. **Priority P3: evaluator/** - Score output quality and clean results. CLI Tests: `brain evaluate <run_id>`. Status: `Backlog`
-
-10. **Priority P3: knowledge_base/** - Store past pipelines for learning and reuse. CLI Tests: `brain kb stats`. Status: `Backlog`
-
-11. **Priority P3: aggregator/** - Merge multiple JSON runs. CLI Tests: `brain merge tag=jobs`. Status: `Backlog`
+1. 
+2. 
 
 ## Development and Priority by Order
 
@@ -82,7 +63,7 @@
 - Key CLI Regression Tests:
   - `brain config set OPENAI_KEY sk-xxx` (set a secret value, verify storage).
   - `brain config list` (list configured secrets, masked for security, verify output).
-- **Status:** Backlog.
+- **Status:** `[Human_Review]`
 - **Priority Rationale:** Second module (P0, Order 2) as it provides a secure mechanism to manage secrets (e.g., API keys for ScraperAPI), necessary for certain tools in `tool_registry`. Follows directly after `tool_registry` to prepare configurations before user interaction via `cli/`.
 - **Development Completion Note:** Must be fully implemented (local `.env` loading, basic getter function) and tested before moving to `cli/`. Tests must confirm that secrets can be set and retrieved correctly.
 - **Dependencies:** None directly, but supports `tool_registry` if tools have `required_config` tied to secrets.
@@ -132,62 +113,7 @@
   - **Context-Aware UX:** Ensure verbose output adapts to the process state, providing relevant next steps or error-specific suggestions (e.g., after a timeout, suggest `brain retry --increase-timeout`), making terminal flow intuitive.
   - Lives in the same codebase as prior modules, enabling early testing of `tool_registry` and `config_secrets`.
 
-### 4. progress_tracker/ (P0 - Core Foundations)
-
-- **One-Line Goal:** Publish/subscribe run status & logs.
-- Encapsulated Features:
-  - Redis (hosted) or SQLite (local) event bus for tracking run progress and logging status updates.
-  - `publish(event)` function for modules to log execution steps or errors (e.g., "Pipeline started", "Step 1 completed").
-  - SSE (Server-Sent Events) consumer for real-time updates accessible via CLI or API.
-  - **Progress Indicators:** For processes longer than 1 second, display a dynamic progress status bar, percentage, or step indicator in the terminal (using libraries like `tqdm` or `rich`) to visually inform users about ongoing operations and avoid confusion between bugs and long-running tasks.
-  - **User Control Commands:** Provide commands like `diagnostic <run_id>` (to inspect detailed logs or state), `kill <run_id>` (to terminate a stuck process), and `retry <run_id>` (to restart a failed run with optional adjustments), preventing zombie modes, infinite loops, or stuck processes.
-- Key CLI Regression Tests:
-  - Simulated-events unit test (mock events like "Pipeline started" and verify receipt in CLI or log).
-- **Status:** Backlog.
-- **Priority Rationale:** Fourth module (P0, Order 4) as requested, placed directly after `cli/` to enable tracking of operations initiated via CLI. Essential for providing visibility into ongoing processes even in V1.
-- **Development Completion Note:** Must be fully implemented (local SQLite event bus, basic publishing mechanism, progress indicators, user control commands) and tested before moving to `api_gateway/`. Tests must confirm that status events are published, progress is displayed dynamically, and control commands work as expected.
-- **Dependencies:** Integrates with `cli/` for displaying real-time status and progress to users, and later with `executor/` for run-specific events.
-- Input/Output Specifications:
-  - **Input Example (Publish):** `publish({"run_id": "123", "status": "started", "message": "Pipeline initiated", "progress_percentage": 0})` (logged by a module like `executor`).
-  - **Output Example (CLI View):** `brain status 123` returns stream or log like "Run 123: started - Pipeline initiated at 10:00 [Progress: 0% - Step 1/3]".
-  - **Progress Indicator Example:** During a scrape, terminal shows `[██████████          ] 50% - Fetching page content...` updated every second.
-  - **Control Command Example:** `brain diagnostic 123` returns "Run 123: Last update 30s ago, Status: Fetching, Possible delay in network response", while `brain kill 123` terminates with "Run 123 terminated by user".
-- Additional Test Cases:
-  - Edge Case: Multiple simultaneous runs (ensure event isolation by `run_id` and correct progress bars for each).
-  - Error Case: Publishing with missing `run_id` (expect fallback or error handling).
-  - Progress Case: Long process (>1s) without updates (ensure progress bar shows "stalled" or similar warning).
-  - Control Case: Test `kill` on non-existent run (expect error message).
-- Notes:
-  - Focus on local SQLite in V1 for simplicity, deferring Redis to a later phase for hosted scalability.
-  - Integration with `cli/` for real-time status display during testing.
-  - **Progress Indicators:** Implement dynamic terminal progress bars/percentages/steps updating every second for processes over 1 second, ensuring users understand if a delay is normal or indicative of a bug.
-  - **User Control:** Commands like `diagnostic`, `kill`, and `retry` give users visibility and control over runs, preventing zombie processes or infinite loops by allowing inspection (detailed logs), termination, or restart with adjustments, enhancing trust in the system’s state.
-
-### 5. api_gateway/ (P0 - Core Foundations)
-
-- **One-Line Goal:** Single REST / MCP entrypoint.
-- Encapsulated Features:
-  - FastAPI base app for REST API access to core functions of other modules.
-  - Routes: `/build` (pipeline creation endpoint), `/run` (execution trigger), `/status` (run status retrieval), `/tools` (registry access for listing tools).
-  - SSE endpoint: `/events/{run}` for real-time status updates linked to `progress_tracker`.
-- Key CLI Regression Tests:
-  - `curl /healthz` (check API health, expect 200 OK response).
-  - `brain --api ping` (CLI-to-API connectivity test, expect confirmation).
-- **Status:** Backlog.
-- **Priority Rationale:** Fifth module (P0, Order 5) as it provides an alternative interface to CLI for automated or remote interactions, complementing the initial flow. Follows `progress_tracker/` to enable integration with status tracking.
-- **Development Completion Note:** Must be fully implemented (basic FastAPI app with core routes) and tested before moving to `intent_inference/`. Tests must confirm that the API can interact with `tool_registry` and `cli/`.
-- **Dependencies:** Relies on `tool_registry/` for tool data access, `progress_tracker/` for SSE status updates, and eventually other modules for pipeline building/execution.
-- Input/Output Specifications:
-  - **Input Example (API Call):** `POST /tools {"name": "playwright", "tool_type": "browser"}` (add tool via API).
-  - **Output Example (API Response):** `GET /tools` returns `[{"name": "playwright", "tool_type": "browser", ...}, ...]` with HTTP 200 status.
-- Additional Test Cases:
-  - Edge Case: API request with malformed JSON (expect 400 Bad Request).
-  - Error Case: Access non-existent endpoint (expect 404 Not Found).
-- Notes:
-  - While CLI suffices for V1 testing, `api_gateway` supports broader integrations and automation in future iterations.
-  - Lives in the same codebase, allowing parallel access to shared modules like `tool_registry`.
-
-### 6. intent_inference/ (P1 - High Priority)
+### 4. intent_inference/ (P1 - High Priority)
 
 - **One-Line Goal:** Transform raw user input (structured or free-text) into structured `IntentSpec` JSON.
 
@@ -246,6 +172,63 @@
 
   - **Recommendation:** A hybrid stack of Typer (CLI parsing), Pydantic (schema/validation), and LangChain/OpenAI SDK (LLM parsing) balances flexibility, control, and error detection for V1, with feedback loops enhancing accuracy over time.
 
+
+
+### 5. progress_tracker/ (P0 - Core Foundations)
+
+- **One-Line Goal:** Publish/subscribe run status & logs.
+- Encapsulated Features:
+  - Redis (hosted) or SQLite (local) event bus for tracking run progress and logging status updates.
+  - `publish(event)` function for modules to log execution steps or errors (e.g., "Pipeline started", "Step 1 completed").
+  - SSE (Server-Sent Events) consumer for real-time updates accessible via CLI or API.
+  - **Progress Indicators:** For processes longer than 1 second, display a dynamic progress status bar, percentage, or step indicator in the terminal (using libraries like `tqdm` or `rich`) to visually inform users about ongoing operations and avoid confusion between bugs and long-running tasks.
+  - **User Control Commands:** Provide commands like `diagnostic <run_id>` (to inspect detailed logs or state), `kill <run_id>` (to terminate a stuck process), and `retry <run_id>` (to restart a failed run with optional adjustments), preventing zombie modes, infinite loops, or stuck processes.
+- Key CLI Regression Tests:
+  - Simulated-events unit test (mock events like "Pipeline started" and verify receipt in CLI or log).
+- **Status:** Backlog.
+- **Priority Rationale:** Fourth module (P0, Order 4) as requested, placed directly after `cli/` to enable tracking of operations initiated via CLI. Essential for providing visibility into ongoing processes even in V1.
+- **Development Completion Note:** Must be fully implemented (local SQLite event bus, basic publishing mechanism, progress indicators, user control commands) and tested before moving to `api_gateway/`. Tests must confirm that status events are published, progress is displayed dynamically, and control commands work as expected.
+- **Dependencies:** Integrates with `cli/` for displaying real-time status and progress to users, and later with `executor/` for run-specific events.
+- Input/Output Specifications:
+  - **Input Example (Publish):** `publish({"run_id": "123", "status": "started", "message": "Pipeline initiated", "progress_percentage": 0})` (logged by a module like `executor`).
+  - **Output Example (CLI View):** `brain status 123` returns stream or log like "Run 123: started - Pipeline initiated at 10:00 [Progress: 0% - Step 1/3]".
+  - **Progress Indicator Example:** During a scrape, terminal shows `[██████████          ] 50% - Fetching page content...` updated every second.
+  - **Control Command Example:** `brain diagnostic 123` returns "Run 123: Last update 30s ago, Status: Fetching, Possible delay in network response", while `brain kill 123` terminates with "Run 123 terminated by user".
+- Additional Test Cases:
+  - Edge Case: Multiple simultaneous runs (ensure event isolation by `run_id` and correct progress bars for each).
+  - Error Case: Publishing with missing `run_id` (expect fallback or error handling).
+  - Progress Case: Long process (>1s) without updates (ensure progress bar shows "stalled" or similar warning).
+  - Control Case: Test `kill` on non-existent run (expect error message).
+- Notes:
+  - Focus on local SQLite in V1 for simplicity, deferring Redis to a later phase for hosted scalability.
+  - Integration with `cli/` for real-time status display during testing.
+  - **Progress Indicators:** Implement dynamic terminal progress bars/percentages/steps updating every second for processes over 1 second, ensuring users understand if a delay is normal or indicative of a bug.
+  - **User Control:** Commands like `diagnostic`, `kill`, and `retry` give users visibility and control over runs, preventing zombie processes or infinite loops by allowing inspection (detailed logs), termination, or restart with adjustments, enhancing trust in the system’s state.
+
+### 6. api_gateway/ (P0 - Core Foundations)
+
+- **One-Line Goal:** Single REST / MCP entrypoint.
+- Encapsulated Features:
+  - FastAPI base app for REST API access to core functions of other modules.
+  - Routes: `/build` (pipeline creation endpoint), `/run` (execution trigger), `/status` (run status retrieval), `/tools` (registry access for listing tools).
+  - SSE endpoint: `/events/{run}` for real-time status updates linked to `progress_tracker`.
+- Key CLI Regression Tests:
+  - `curl /healthz` (check API health, expect 200 OK response).
+  - `brain --api ping` (CLI-to-API connectivity test, expect confirmation).
+- **Status:** Backlog.
+- **Priority Rationale:** Fifth module (P0, Order 5) as it provides an alternative interface to CLI for automated or remote interactions, complementing the initial flow. Follows `progress_tracker/` to enable integration with status tracking.
+- **Development Completion Note:** Must be fully implemented (basic FastAPI app with core routes) and tested before moving to `intent_inference/`. Tests must confirm that the API can interact with `tool_registry` and `cli/`.
+- **Dependencies:** Relies on `tool_registry/` for tool data access, `progress_tracker/` for SSE status updates, and eventually other modules for pipeline building/execution.
+- Input/Output Specifications:
+  - **Input Example (API Call):** `POST /tools {"name": "playwright", "tool_type": "browser"}` (add tool via API).
+  - **Output Example (API Response):** `GET /tools` returns `[{"name": "playwright", "tool_type": "browser", ...}, ...]` with HTTP 200 status.
+- Additional Test Cases:
+  - Edge Case: API request with malformed JSON (expect 400 Bad Request).
+  - Error Case: Access non-existent endpoint (expect 404 Not Found).
+- Notes:
+  - While CLI suffices for V1 testing, `api_gateway` supports broader integrations and automation in future iterations.
+  - Lives in the same codebase, allowing parallel access to shared modules like `tool_registry`.
+
 ### 7. pipeline_builder/ (P1 - High Priority)
 
 - **One-Line Goal:** Dynamically build `PipelineSpec` JSON from `IntentSpec` for scraping tasks.
@@ -294,30 +277,44 @@
   - **Autonomy:** Takes `PipelineSpec` as input, executes independently, outputs raw or minimally cleaned results.
   - **Evolution:** V2 introduces dynamic adaptors to replace hardcoded logic.
 
-### 9. evaluator/ (P3 - Low Priority)
 
-- **One-Line Goal:** Score output quality, clean results, and trigger feedback loops.
+
+### 9. evaluator/ (P2 - Medium Priority)
+
+- **One-Line Goal:** Analyze execution results, diagnose errors, clean outputs, and trigger intelligent feedback loops.
 - Encapsulated Features:
-  - Output validation to ensure extracted fields match `IntentSpec` requirements (e.g., all requested fields present).
-  - Advanced cleaning of results (e.g., remove HTML artifacts like `<br>`, format numbers for "price").
-  - Quality scoring (e.g., completeness, accuracy based on predefined or dynamic criteria).
-  - Feedback triggering to suggest retry or adjustment, routing issues to `pipeline_builder` (pipeline flaws) or `intent_inference` (intent misinterpretation).
+  - **Error Analysis:** Identify specific failure types (selector not found, anti-bot detection, timeouts) and map them to potential causes.
+  - **Page Structure Analysis:** Examine HTML to find alternative selectors or extraction patterns when standard approaches fail.
+  - **Fix Suggestion:** Generate actionable recommendations for pipeline adjustments, selector modifications, or tool changes.
+  - **Output Validation:** Ensure extracted fields match `IntentSpec` requirements (e.g., all requested fields present).
+  - **Advanced Cleaning:** Remove HTML artifacts like `<br>`, format numbers for "price", and create transformation rules for data normalization.
+  - **Quality Scoring:** Evaluate completeness and accuracy based on predefined or dynamic criteria.
+  - **Feedback Routing:** Direct issues to appropriate modules (e.g., `pipeline_builder` for pipeline flaws, `intent_inference` for intent misinterpretation).
 - Key CLI Regression Tests:
-  - `brain evaluate <run_id>` (assess output quality and cleanliness, verify cleaned JSON and feedback suggestions).
+  - `brain evaluate <run_id>` (assess output quality or diagnose errors, verify cleaned JSON and feedback suggestions).
+  - `brain analyze <run_id>` (detailed diagnostic for failed runs with fix recommendations).
+  - `brain clean <run_id>` (apply advanced cleaning to results with HTML artifacts).
 - **Status:** Backlog.
-- **Priority Rationale:** Ninth module (P3, Order 9) as it enhances the flow by validating and cleaning outputs after execution, a valuable but non-critical step for initial V1 testing of the core scraping flow.
-- **Development Completion Note:** Must be fully implemented (validation, advanced cleaning, feedback logic) and tested before moving to `knowledge_base/`. Tests must confirm outputs are cleaned (no HTML tags) and appropriate feedback is suggested for errors or poor quality.
-- **Dependencies:** Takes output from `executor/`, references `IntentSpec` from `intent_inference/` for validation, integrates with `progress_tracker/` for status logging.
+- **Priority Rationale:** Now Medium Priority (P2, Order 9) as it not only validates outputs but provides critical diagnostic capabilities for error recovery, substantially improving user experience through intelligent feedback and remediation.
+- **Development Completion Note:** Must be fully implemented (error analysis, structure analysis, recommendation generation, validation, cleaning) and tested before moving to `knowledge_base/`. Tests must confirm both successful output cleaning and accurate error diagnosis with actionable fix suggestions.
+- **Dependencies:** Takes output from `executor/` (success results or error reports), references `IntentSpec` from `intent_inference/` for validation, integrates with `progress_tracker/` for status logging, and updates/references `knowledge_base/` for learned patterns.
 - Input/Output Specifications:
-  - **Input Example (Raw Output from Executor):** `{"price": "123.00<br>", "title": "<b>Mon Produit Incroyable</b>"}`, with associated `IntentSpec` and `run_id`.
+  - **Input Example (Success Case):** `{"price": "123.00<br>", "title": "<b>Mon Produit Incroyable</b>"}`, with associated `IntentSpec` and `run_id`.
+  - **Input Example (Error Case):** `{"error": {"type": "selector_not_found", "selector": ".price-whole", "page_content": "<!DOCTYPE html>..."}}`, with associated `IntentSpec` and `run_id`.
   - **Output Example (Cleaned & Scored):** `{"cleaned_result": {"price": "123.00", "title": "Mon Produit Incroyable"}, "quality_score": 0.9, "feedback": "All requested fields present and clean"}`.
-  - **Feedback Trigger Example:** If "price" is missing, output `{"feedback": "Missing field 'price', suggest adjusting selector in pipeline", "target_module": "pipeline_builder"}`.
+  - **Output Example (Error Analysis):** `{"analysis": {"error_type": "selector_not_found", "possible_causes": ["Site layout change"], "suggested_selectors": [".s-item__price"]}, "recommendations": [{"action": "update_selector", "target": "price", "new_value": ".s-item__price"}]}`.
 - Additional Test Cases:
   - Edge Case: Output with mixed HTML and text (expect full cleanup to plain text).
   - Error Case: Missing mandatory fields per `IntentSpec` (expect low score and feedback to adjust pipeline or intent).
+  - Diagnostic Case: Anti-bot detection (expect recommendation for stealth mode or proxy).
+  - Learning Case: Test knowledge updating after successful fix (expect pattern to be stored for future runs).
 - Notes:
-  - **Output Cleaning:** Ensures JSON output matches user intent (e.g., "price" as numeric, no HTML in "title"). Basic cleaning initially in `executor`, advanced validation and scoring here.
-  - **Feedback Loop:** Determines if issues stem from intent misinterpretation (returns to `intent_inference`) or pipeline flaws (returns to `pipeline_builder`), with clear triggers based on error type or quality score.
+  - **Dual Role:** Functions as both output validator for successful runs and diagnostic expert for failed runs, creating a unified approach to result assessment.
+  - **Pattern Recognition:** Uses heuristic rules and knowledge base patterns to identify common error signatures and suggest appropriate fixes.
+  - **Output Cleaning:** Ensures JSON output matches user intent (e.g., "price" as numeric, no HTML in "title"). Basic cleaning initially in `executor`, advanced validation and transformation here.
+  - **Feedback Loop:** Creates a learning cycle where successful fixes update the knowledge base, improving future pipeline generation and error recovery.
+  - **Simplification:** Start with rule-based approaches for common errors in V1, deferring complex LLM-based HTML analysis to later phases.
+  - **Integration Points:** Works bidirectionally with both `executor/` (receiving results/errors) and `pipeline_builder/` (suggesting pipeline modifications), forming a self-improving system.
 
 ### 10. knowledge_base/ (P3 - Low Priority)
 
