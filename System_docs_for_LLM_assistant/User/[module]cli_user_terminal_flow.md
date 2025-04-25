@@ -109,13 +109,13 @@ Does this pipeline look correct? [Y/n]: Y
 ❌ Error: Selector '.prcIsum' not found on page
 This often happens when sites change their layout or use dynamic content.
 
-💡 Diagnostic from scrape_analyzer:
+💡 Diagnostic from evaluator:
   - Error type: Selector not found
   - Common causes: Site layout change, A/B testing, region-specific variant
   - Knowledge base entries: 3 similar issues found for eBay
 
 💡 Available actions:
-  1. analyze - Use scrape_analyzer to analyze page structure and find selectors
+  1. analyze - Use evaluator to analyze page structure and find selectors
   2. retry - Retry with different selector
   3. browser - Try a different browser tool
   4. abort - Cancel this scrape
@@ -320,7 +320,7 @@ Does this pipeline look correct? [Y/n]: Y
 ❌ Error: Detected anti-bot protection (CAPTCHA/CloudFlare challenge)
 This site is using bot protection that's blocking our standard scraper.
 
-💡 Diagnostic from scrape_analyzer:
+💡 Diagnostic from evaluator:
   - Error type: Anti-bot detection
   - Common causes: Cloudflare protection, Anti-scraping measures, Bot fingerprinting
   - Knowledge base entries: 5 similar issues found for footlocker.com
@@ -360,7 +360,7 @@ Does this pipeline look correct? [Y/n]: Y
 📋 What issues do you see with the results?
 > The sizes are coming through as numbers, but I need them as strings with "US " prefix
 
-ℹ️ Analyzing issue with scrape_analyzer...
+ℹ️ Analyzing issue with evaluator...
 🔄 [########------] 40% Examining extracted data
 🔄 [################] 80% Generating transformation rules
 🔄 [####################] 100% Creating data mapping
@@ -468,7 +468,7 @@ Are these settings correct? [Y/n/edit]: Y
 📋 What issues do you see with the results?
 > The RAM and storage are part of the title, I'd like them as separate fields
 
-ℹ️ Analyzing issue with scrape_analyzer...
+ℹ️ Analyzing issue with evaluator...
 🔄 [########------] 40% Examining title patterns
 🔄 [############--] 60% Identifying data patterns
 🔄 [################] 80% Creating extraction rules
@@ -717,7 +717,7 @@ Does this pipeline look correct? [Y/n]: Y
 📋 What issues do you see with the results?
 > The location still has HTML tags and the amenities have some HTML tags too
 
-ℹ️ Analyzing issues with scrape_analyzer...
+ℹ️ Analyzing issues with evaluator...
 🔄 [########------] 40% Detecting HTML artifacts
 🔄 [############--] 60% Creating cleaning rules
 🔄 [################] 80% Generating transformations
@@ -804,19 +804,9 @@ Select project [1-5]: 5
 💡 Tip: Use 'brain export run_129 --format json' to export these results
 ```
 
-Note: Based on your request, I've updated these flows to include:
 
-1. **Module References**: Each flow now explicitly mentions which modules are handling different parts of the process (`intent_inference`, `pipeline_builder`, `executor`, and `scrape_analyzer`)
 
-2. **Pipeline Building Progress**: Added detailed progress indicators during pipeline building to show what's happening behind the scenes
-
-3. **Natural Language Issue Reporting**: Users can now report issues in natural language, and the system analyzes and suggests appropriate fixes
-
-4. **Project Organization**: Each flow now includes project management at the end, allowing users to organize runs into projects
-
-5. **Quality Assessment**: Enhanced the result satisfaction checks to allow more nuanced feedback about data quality issues
-
-The primary module responsible for analyzing errors and suggesting fixes would be `scrape_analyzer`, which doesn't currently exist in our module list. This would be a new module that would need to be developed to provide the intelligent diagnostics and recommendations shown in these examples.
+---
 
 
 

@@ -765,32 +765,32 @@ def test_scrape_command_mocked():
 
 ### Task Breakdown / Features to Develop
 
-#### 1. Core Framework [To_Do_Next]
+#### 1. Core Framework [LLM_Test_Complete]
 
-- Set up Typer application with global flags (--json, --verbose, --version)
-- Create standard output formatters (human-readable and JSON)
-- Implement basic error handling
-- Set up mock directory structure for future modules
+- ✅ Set up Typer application with global flags (--json, --verbose, --version)
+- ✅ Create standard output formatters (human-readable and JSON)
+- ✅ Implement basic error handling
+- ✅ Set up module directory structure
 
-#### 2. Tool Commands [To_Do_Next]
+#### 2. Tool Commands [LLM_Test_Complete]
 
-- Implement `brain tools list` wrapper around `tool_registry`
-- Implement `brain tools add` wrapper
-- Implement `brain tools remove` wrapper
-- Implement `brain tools check-compat` wrapper
+- ✅ Implement `brain tools list` wrapper around `tool_registry`
+- ✅ Implement `brain tools add` wrapper
+- ✅ Implement `brain tools remove` wrapper
+- ✅ Implement `brain tools check-compat` wrapper
 
-#### 3. Config Commands [To_Do_Next]
+#### 3. Config Commands [LLM_Test_Complete]
 
-- Implement `brain config set` wrapper around `config_secrets`
-- Implement `brain config list` wrapper
-- Implement `brain config unset` wrapper
+- ✅ Implement `brain config set` wrapper around `config_secrets`
+- ✅ Implement `brain config list` wrapper
+- ✅ Implement `brain config unset` wrapper
 
-#### 4. Basic Scraping [To_Do_Next]
+#### 4. Basic Scraping [LLM_Test_Complete]
 
-- Implement `brain scrape` with structured arguments
-- Create mock for pipeline building and execution
-- Add progress indicator for scraping
-- Implement basic prompts for missing parameters
+- ✅ Implement `brain scrape` with structured arguments
+- ✅ Create mock implementations for future modules (intent_inference, pipeline_builder, executor)
+- ✅ Add progress indicator for scraping
+- ✅ Implement basic prompts for missing parameters
 
 #### 5. Status Commands [Backlog - After progress_tracker module is available]
 
