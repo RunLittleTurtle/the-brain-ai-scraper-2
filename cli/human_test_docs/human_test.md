@@ -13,7 +13,7 @@ This document provides a complete guide for human testing of the CLI module func
 
 Before testing, ensure you have:
 
-1. Python 3.9+ installed
+1. Python 3.11+ installed
 2. All dependencies installed (`pydantic`, `typer`, `rich`, etc.)
 3. The Brain project code on your local machine
 
