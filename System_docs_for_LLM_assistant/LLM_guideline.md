@@ -55,4 +55,6 @@
 -   **Module Tracker & Status:(You must go look in the Module_index, then go update the respective [Module] file**) `/Users/samuelaudette/Documents/code_projects/the-brain-ai-scraper-2/System_docs_for_LLM_assistant/System_docs/Modules` (Your primary source for modules and status updates)
 -   **Module Overview:** `/Users/samuelaudette/Documents/code_projects/the-brain-ai-scraper-2/System_docs_for_LLM_assistant/System_docs/Modules/Module_Index.md` (For understanding module roles and interactions)
 -   **Architecture Plan:** `/Users/samuelaudette/Documents/code_projects/the-brain-ai-scraper-2/System_docs_for_LLM_assistant/System_docs/Archithecture_DB.md` (This document contains the stack/choices)
+**Before each installation, run ~/bin/pkglist to ensure latest packages**
 **Use brew for you installs if you can**
+**Run pipcheck before pushing a new package to pypi**

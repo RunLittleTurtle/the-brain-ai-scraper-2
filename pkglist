@@ -1,0 +1,208 @@
+#!/Users/samuelaudette/Documents/code_projects/the-brain-ai-scraper-2/venv/bin/python3
+"""
+Package Update Tracker - Shows installed packages with colorful formatting.
+"""
+import sys
+import json
+import subprocess
+from rich.console import Console
+from rich.table import Table
+
+console = Console()
+
+def get_pip_packages():
+    """Get all installed pip packages and outdated packages."""
+    try:
+        # Get all packages
+        pip_list_result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--format=json"],
+            capture_output=True, text=True, check=True
+        )
+        
+        # Get outdated packages
+        pip_outdated_result = subprocess.run(
+            [sys.executable, "-m", "pip", "list", "--outdated", "--format=json"],
+            capture_output=True, text=True, check=True
+        )
+        
+        all_packages = json.loads(pip_list_result.stdout)
+        outdated_packages = {
+            pkg["name"].lower(): pkg["latest_version"] 
+            for pkg in json.loads(pip_outdated_result.stdout)
+        }
+        
+        return all_packages, outdated_packages
+    except Exception as e:
+        console.print(f"[bold red]Error listing Python packages: {str(e)}[/bold red]")
+        return [], {}
+
+def get_homebrew_packages():
+    """Get all installed homebrew packages and outdated packages."""
+    try:
+        brew_result = subprocess.run(
+            ["brew", "list", "--versions"], 
+            capture_output=True, text=True
+        )
+        
+        if brew_result.returncode != 0 or not brew_result.stdout.strip():
+            return {}, {}
+            
+        brew_outdated = subprocess.run(
+            ["brew", "outdated", "--verbose"], 
+            capture_output=True, text=True
+        )
+        
+        # Parse installed packages
+        brew_packages = {}
+        for line in brew_result.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.strip().split()
+                if parts:
+                    pkg_name = parts[0]
+                    version = parts[1] if len(parts) > 1 else ""
+                    brew_packages[pkg_name] = version
+        
+        # Parse outdated packages
+        outdated_brew = {}
+        if brew_outdated.returncode == 0:
+            for line in brew_outdated.stdout.strip().split('\n'):
+                if line.strip():
+                    parts = line.strip().split()
+                    if len(parts) > 1:
+                        pkg_name = parts[0]
+                        latest_version = parts[-1] if len(parts) > 2 else ""
+                        outdated_brew[pkg_name] = latest_version
+        
+        return brew_packages, outdated_brew
+    except FileNotFoundError:
+        # Homebrew not installed
+        return {}, {}
+    except Exception as e:
+        console.print(f"[bold red]Error listing Homebrew packages: {str(e)}[/bold red]")
+        return {}, {}
+
+def get_npm_packages():
+    """Get all installed npm global packages and outdated packages."""
+    try:
+        npm_result = subprocess.run(
+            ["npm", "list", "-g", "--json"], 
+            capture_output=True, text=True
+        )
+        
+        npm_outdated = subprocess.run(
+            ["npm", "outdated", "-g", "--json"], 
+            capture_output=True, text=True
+        )
+        
+        if npm_result.returncode != 0 or not npm_result.stdout.strip():
+            return {}, {}
+            
+        try:
+            npm_data = json.loads(npm_result.stdout)
+            dependencies = npm_data.get("dependencies", {})
+            
+            npm_outdated_data = {}
+            if npm_outdated.returncode == 0 and npm_outdated.stdout.strip():
+                npm_outdated_data = json.loads(npm_outdated.stdout)
+            
+            return dependencies, npm_outdated_data
+        except json.JSONDecodeError:
+            console.print("[bold red]Error parsing NPM package data.[/bold red]")
+            return {}, {}
+    except FileNotFoundError:
+        # NPM not installed
+        return {}, {}
+    except Exception as e:
+        console.print(f"[bold red]Error listing NPM packages: {str(e)}[/bold red]")
+        return {}, {}
+
+def main():
+    """List all installed packages across all package managers."""
+    # Python packages
+    console.print("Python Packages:")
+    all_packages, outdated_packages = get_pip_packages()
+    
+    if all_packages:
+        console.print(f"Checking latest versions for {len(all_packages)} packages...")
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("Package", style="dim")
+        table.add_column("Version")
+        table.add_column("Latest Available")
+        
+        # Sort packages by name
+        sorted_packages = sorted(
+            [(pkg["name"], pkg["version"]) for pkg in all_packages], 
+            key=lambda x: x[0].lower()
+        )
+        
+        for name, current_version in sorted_packages:
+            if name.lower() in outdated_packages:
+                latest_version = outdated_packages[name.lower()]
+                table.add_row(
+                    name, 
+                    current_version, 
+                    f"[bold blue]{latest_version}[/bold blue]"
+                )
+            else:
+                table.add_row(name, current_version, current_version)
+        
+        console.print(table)
+    else:
+        console.print("  No Python packages found.")
+    
+    # Homebrew packages
+    console.print("\nHomebrew Packages:")
+    brew_packages, outdated_brew = get_homebrew_packages()
+    
+    if brew_packages:
+        brew_table = Table(show_header=True, header_style="bold")
+        brew_table.add_column("Package", style="dim")
+        brew_table.add_column("Version")
+        brew_table.add_column("Latest Available")
+        
+        for name, version in sorted(brew_packages.items()):
+            if name in outdated_brew:
+                brew_table.add_row(
+                    name,
+                    version,
+                    f"[bold blue]{outdated_brew[name]}[/bold blue]"
+                )
+            else:
+                brew_table.add_row(name, version, version)
+        
+        console.print(brew_table)
+    else:
+        console.print("  No Homebrew packages found or brew not installed.")
+    
+    # NPM packages
+    console.print("\nNPM Global Packages:")
+    npm_dependencies, npm_outdated = get_npm_packages()
+    
+    if npm_dependencies:
+        npm_table = Table(show_header=True, header_style="bold")
+        npm_table.add_column("Package", style="dim")
+        npm_table.add_column("Version")
+        npm_table.add_column("Latest Available")
+        
+        for name, info in sorted(npm_dependencies.items()):
+            version = info.get("version", "")
+            latest = (
+                npm_outdated.get(name, {}).get("latest", version) 
+                if name in npm_outdated else version
+            )
+            
+            if name in npm_outdated:
+                npm_table.add_row(
+                    name,
+                    version,
+                    f"[bold blue]{latest}[/bold blue]"
+                )
+            else:
+                npm_table.add_row(name, version, version)
+        
+        console.print(npm_table)
+    else:
+        console.print("  No NPM global packages found or npm not installed.")
+
+if __name__ == "__main__":
+    main()
