@@ -5,7 +5,7 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
-        "pydantic>=1.10.0,<2.0.0",
+        "pydantic>=2.0.0",  # Updated to use Pydantic v2 as per project requirements
         "typer>=0.7.0",
         "rich>=12.0.0",
         "pytest>=7.0.0",
@@ -19,4 +19,9 @@ setup(
     python_requires=">=3.9",
     author="Samuel Audette",
     description="The Brain AI Scraper - Intelligent web scraping system",
+    entry_points={
+        "console_scripts": [
+            "brain=cli.app:app",
+        ],
+    },
 )

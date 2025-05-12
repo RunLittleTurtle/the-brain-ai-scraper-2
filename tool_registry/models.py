@@ -43,7 +43,7 @@ class ToolMetadata(BaseModel):
         super().__init__(**data)
     execution_mode: str = Field(
         description="Main execution mode ('sync' or 'async'). Crucial for orchestration by the 'executor' module.",
-        regex="^(sync|async)$"
+        pattern="^(sync|async)$"
     )
     capabilities: List[str] = Field(
         description="List of key capabilities or features offered by the tool (useful tags for selection, e.g., 'javascript_rendering', 'anti_cloudflare', 'proxy_rotation', 'html_parsing')."
@@ -62,7 +62,7 @@ class ToolMetadata(BaseModel):
     )
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "playwright",
                 "description": "A modern browser automation framework by Microsoft",

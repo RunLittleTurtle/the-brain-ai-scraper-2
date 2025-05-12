@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Union
 from pydantic import BaseModel
 from uuid import uuid4
 
-from cli.mocks.mock_intent_inference import IntentSpec
+from intent_inference.cli_adapter import IntentSpec
 
 
 class ToolConfig(BaseModel):

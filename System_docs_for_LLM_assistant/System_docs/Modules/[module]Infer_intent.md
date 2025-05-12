@@ -3,6 +3,12 @@
 ```mermaid
 kanban
 Backlog
+    9.Unit Testing: Write tests for components
+    10.Integration Testing: End-to-end testing
+LLM_In_Progress
+LLM_Testing
+    11.Public API: Define __init__.py exports, 6
+LLM_Test_Complete
     1.Project Setup: Set up project structure and dependencies
     2.Pydantic Models: Implement IntentSpec and ContextStore, 1.1, 1.2
     3.Intent Chain: Build intent extraction chain, 2.1
@@ -11,12 +17,6 @@ Backlog
     6.Judge Chain: Implement LLM-as-Judge validation, 3.2
     7.Main Orchestration: Build logic with retry loop, 4
     8.CLI Interface: Develop human approval interface, 5
-    9.Unit Testing: Write tests for components
-    10.Integration Testing: End-to-end testing
-    11.Public API: Define __init__.py exports, 6
-LLM_In_Progress
-column LLM_Testing
-column LLM_Test_Complete
 column Human_Review
 column Human_Done
 
@@ -43,7 +43,7 @@ The Intent Inference module, for this MVP, translates a user's natural language 
 
 ```python
 
-app/
+the-brain-ai-scraper-2/
 └── intent_inference/
     ├── __init__.py               # Public API
     ├── main.py                   # Chain orchestration & high-level API
