@@ -1,4 +1,4 @@
-# [Module] config_secrets
+# [module] config_secrets
 
 config_secrets/
   ├── __init__.py          # Loads config on import, exports key functions

@@ -1,3 +1,28 @@
+# [draft] Evaluator
+
+1. ***Pipeline Solide Jusqu'à Échec :***
+   - *Le pipeline peut "rouler solidement" tant qu'il ne rencontre pas de problème (par exemple, un changement de mise en page du site, un blocage anti-bot, une erreur technique). Les outils comme Playwright ou Scrapy fonctionnent selon leurs configurations définies dans `PipelineSpec`, et `executor/` gère l'exécution sans intervention extérieure.*
+   - *Si un pipeline "casse" (détecté via `evaluator/` signalant un échec comme "selector not found"), alors seulement LangGraph (ou une autre logique de construction) peut être rappelé pour ajuster ou reconstruire le pipeline en fonction des retours.*
+2. ***Reconstruction uniquement en cas d'échec :***
+   - *Si un pipeline réutilisé échoue (via feedback de `evaluator/` signalant des erreurs comme "selector not found" ou "timeout"), alors déclencher LangGraph pour reconstruire ou ajuster le `PipelineSpec` (par exemple, changer d'outil ou ajuster les configurations).*
+   - *En cas de nouvel intent sans correspondance dans `knowledge_base/`, utiliser LangGraph pour une construction initiale.*
+
+### *Exemple de Flux*
+
+- ***Cas 1 : Nouvel Intent (LinkedIn Jobs)***
+  - *`Intent_Inference` génère un `IntentSpec` pour LinkedIn job scraping.*
+  - *Pas de correspondance dans `knowledge_base/` → LangGraph construit un nouveau `PipelineSpec` (Playwright + BeautifulSoup) avec des appels LLM.*
+  - *Exécution réussie via `executor/` → Sauvegarder dans `knowledge_base/` avec métadonnées (site: "linkedin", intent_type: "job_search").*
+- ***Cas 2 : Intent Similaire (LinkedIn Jobs, 2e fois)***
+  - *Nouvel `IntentSpec` pour LinkedIn job scraping.*
+  - *Correspondance trouvée dans `knowledge_base/` → Réutiliser le `PipelineSpec` existant sans LangGraph.*
+  - *Exécution via `executor/` sans coût LLM.*
+- ***Cas 3 : Échec du Pipeline Réutilisé (LinkedIn Mise à Jour Layout)***
+  - *Pipeline réutilisé échoue (via `evaluator/` : "selector not found").*
+  - *Retour à LangGraph pour reconstruction (par exemple, ajuster les sélecteurs ou ajouter un outil anti-bot) avec appel LLM → Nouveau `PipelineSpec` sauvegardé dans `knowledge_base/`.*
+
+
+
 
 
 When at this module, I will need to prompt for the plan following this recommendation: Use this scraper analyser draft, with the Evaluator in module index, combine both goal into one evaluotor development plan. Also use these possible file strcuture and goals:

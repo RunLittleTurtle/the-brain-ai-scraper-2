@@ -1,5 +1,13 @@
 # Web Scraping & Automation Tools
 
+## this is a giant list of python scraping tools
+
+https://github.com/lorien/awesome-web-scraping/blob/master/python.md
+
+## Other
+
+Another way of scraping for the pipeline builder is to find a tool that can use the backend api of the ecommecre site per exemple : https://www.youtube.com/watch?v=ji8F8ppY8bs
+
 ## Browser Automation
 
 ### 1. Playwright (Python)  
@@ -20,7 +28,7 @@
 **FastAPI Integration:** Via `run_in_threadpool(...)`  
 **Notes:** Blocking by default.
 
-### 3. Pyppeteer  
+### 3. Puppeteer  
 **Overview:** Unofficial Python port of Puppeteer for headless Chromium  
 **Paid/Free:** Free  
 **Popularity:** ~3 837 GitHub stars  

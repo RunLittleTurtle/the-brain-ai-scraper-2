@@ -11,8 +11,19 @@
 
 ## Summary with Development Order
 
-1. 
-2. 
+1. **tool_registry/** — Plug-and-play catalogue of scraping tools with metadata, CRUD operations, and compatibility validation. **Status:** Human_Done
+2. **config_secrets/** — Centralized secrets management via local .env loader and secure retrieval helpers. **Status:** LLM_In_Progress
+3. **cli/** — Thin command-line interface supporting structured flags, free-text commands, and interactive prompts. **Status:** LLM_In_Progress
+4. **intent_inference/** — LLM-driven conversion of raw user input into validated IntentSpec JSON. **Status:** Backlog
+5. **progress_tracker/** — Publish/subscribe event bus and real-time CLI progress indicators for run status and logs. **Status:** Backlog
+6. **api_gateway/** — FastAPI-based REST/MCP entrypoint exposing core functions and SSE status updates. **Status:** Backlog
+7. **pipeline_builder/** — Dynamic construction of PipelineSpec JSON from IntentSpec, selecting compatible tools. **Status:** Backlog
+8. **executor/** — Local execution engine for pipelines with error handling and result extraction. **Status:** Backlog
+9. **evaluator/** — Automated error analysis, output cleaning, quality scoring, and feedback suggestion loops. **Status:** Backlog
+10. **knowledge_base/** — Storage and similarity-based retrieval of past runs for learning and reuse. **Status:** Backlog
+11. **output_processor/** — Merging and LLM-driven normalization of multiple JSON run outputs into a consolidated result. **Status:** Backlog
+12. **scout/** — Analyze websites to determine technical requirements and structure. **Status:** Backlog
+13. **orchestrator/** —  Coordinate flow between modules and manage execution state. **Status:** Backlog
 
 ## Development and Priority by Order
 
@@ -115,62 +126,102 @@
 
 ### 4. intent_inference/ (P1 - High Priority)
 
-- **One-Line Goal:** Transform raw user input (structured or free-text) into structured `IntentSpec` JSON.
+- **One-Line Goal:** Iteratively transform raw user input (text-based) into a robust, validated, and human-approved structured `IntentSpec` JSON, capable of self-correction and incorporating feedback.
 
-- Encapsulated Features:
+- **Encapsulated Features:**
 
-  - LLM-based function: `infer_intent(input: str) -> IntentSpec` for parsing diverse user requests.
-  - Support for structured input (e.g., CLI flags like `--url`) and free-text natural language input (e.g., "Get price from Amazon").
-  - Output validation using a strict Pydantic schema for `IntentSpec` to ensure machine-readable format with error detection for malformed or incomplete intents.
+  - LLM-Powered Intent Generation:
+    - Parses natural language user requests into an initial `IntentSpec` using an LLM (e.g., `chains/intent_chain.py`).
+    - Processes user feedback on existing `IntentSpec`s to produce revised versions using an LLM (e.g., `chains/feedback_chain.py`).
+  - **Contextual Processing:** Maintains conversation state (`models/context.py:ContextStore`) including the last generated spec, user query, and critique hints to inform subsequent processing.
+  - Iterative Self-Correction (LLM-as-a-Judge):
+    - Employs an LLM-based validation chain (`chains/validation_chain.py`) to critically evaluate the generated `IntentSpec` for clarity, completeness, and actionability against the original user query.
+    - Includes basic URL health checks (`utils/url_validator.py`) as part of the validation.
+    - If issues are found, critique hints are fed back into the context for retrying the intent/feedback generation LLM calls, enabling self-improvement.
+  - Human-in-the-Loop (HITL) for Clarification & Final Approval:
+    - If the LLM-as-a-Judge determines the intent is too ambiguous or requires further details, it can generate clarification questions for the user.
+    - The final `IntentSpec` produced by the LLM loop (even if deemed valid by the judge) is presented to a human operator via a CLI (`cli.py`) for explicit review and approval.
+    - The human operator can approve, or reject and provide feedback, which then re-initiates the processing loop.
+  - **Strict Pydantic Schema Validation:** The `IntentSpec` (`models/intent_spec.py`) is defined using Pydantic V2, ensuring a machine-readable format and validating data integrity at each stage.
 
-- Key CLI Regression Tests:
+- **Key CLI Regression Tests (Illustrative examples, actual tests will cover more scenarios):**
 
-  - `brain infer "scrape price on Amazon product page https://amazon.ca/dp/B08WRBGSL2"` (free-text input, verify `IntentSpec` creation).
-  - `brain infer --url https://amazon.ca/dp/B08WRBGSL2 --extract price,title` (structured input, verify `IntentSpec` creation).
+  - `brain infer "scrape price and title on Amazon product page https://amazon.ca/dp/B08WRBGSL2"` (Initial free-text intent, verify `IntentSpec` creation, self-correction, and successful human approval).
+  - `brain infer "Get stock prices from Yahoo"` (Vague initial intent, verify system identifies ambiguity, generates clarification questions, and awaits human feedback/clarification before proceeding to approval).
+  - (In interactive mode) User provides initial intent -> System outputs spec & clarification -> User provides feedback like "Actually, just for Apple stock" -> System processes feedback, re-validates, and presents for approval.
 
 - **Status:** Backlog.
 
-- **Priority Rationale:** Sixth module (P1, Order 6) as it translates user inputs into a usable format (`IntentSpec`) for `pipeline_builder`. Follows the foundational P0 modules to ensure robust user interfaces before tackling processing logic.
+- **Priority Rationale:** Sixth module (P1, Order 6). This module is critical as it's the primary engine translating diverse user inputs and feedback into a reliable, validated `IntentSpec` required by `pipeline_builder/`. Its sophisticated feedback and validation mechanisms ensure higher quality inputs downstream.
 
-- **Development Completion Note:** Must be fully implemented (LLM parsing, schema validation) and tested before moving to `pipeline_builder/`. Tests must confirm that varied inputs (structured or free-text) produce valid `IntentSpec` outputs.
+- **Development Completion Note:**
 
-- **Dependencies:** Relies on `cli/` for receiving user input and may integrate with `api_gateway/` for API-driven requests.
+  - Must be fully implemented according to the graph (including context management, new intent path, feedback path, LLM-as-a-Judge validation loop with URL checks, and human approval CLI).
+  - All Pydantic models (`ContextStore`, `IntentSpec`, etc.) must be finalized.
+  - Core LLM chains (`intent_chain`, `feedback_chain`, `validation_chain`) must be robust.
+  - The orchestration logic in `main.py:IntentInferenceAgent` must correctly manage the state, loops, and human interaction.
+  - Thorough testing is required to confirm that a variety of inputs lead to correctly structured, validated, and (simulated) human-approved `IntentSpec` outputs, including scenarios requiring self-correction and human feedback.
 
-- Input/Output Specifications:
+- **Dependencies:**
 
-  - **Input Example (Free-text):** `"I want the price and title from this Amazon page: https://amazon.ca/dp/B08WRBGSL2"`.
-  - **Input Example (Structured):** `--url https://amazon.ca/dp/B08WRBGSL2 --extract price,title --jscan true`.
-  - **Output Example (`IntentSpec` JSON):** `{"target": {"type": "url", "value": "https://amazon.ca/dp/B08WRBGSL2"}, "requirements": {"technical": ["javascript_rendering", "html_parsing"]}, "data_to_extract": ["price", "title"]}`.
+  - Takes textual input, which could originate from `cli/` or `api_gateway/`.
+  - Output (`IntentSpec`) is consumed by `pipeline_builder/`.
 
-- Additional Test Cases:
+- **Input/Output Specifications:**
 
-  - Edge Case: Ambiguous input (e.g., "Get product info from Amazon") – expect LLM to prompt for URL or make reasonable assumptions.
-  - Error Case: Invalid URL format (expect Pydantic validation error or correction suggestion logged for feedback).
+  - **Input (User Text):** Natural language string, e.g., `"I want the price, title, and reviews from this Amazon page: https://amazon.ca/dp/B08WRBGSL2 for the last month"` or feedback like `"No, change the site to bestbuy.com and also get the stock availability"`.
 
-- Notes:
+  - Output Example (`IntentSpec` JSON after successful processing and human approval):
 
-  - **Permissivity:** Highly flexible, using an LLM to interpret diverse formulations. Makes assumptions if needed (e.g., JavaScript for Amazon domains) and requests clarification for ambiguities via CLI prompts.
+    json
 
-  - **Simplification:** Rigid `IntentSpec` JSON schema with mandatory fields (`target`, `requirements`, `data_to_extract`) and defaults. Include input-output examples in specs to guide LLM coding.
+    
 
-  - **Autonomy:** Operates independently, producing `IntentSpec` from text input without initial reliance on other modules beyond user input delivery.
+    ```json
+    {
+      "spec_id": "intent_78532_rev1", // Example, may include revisions
+      "original_user_query": "I want the price, title, and reviews from this Amazon page: https://amazon.ca/dp/B08WRBGSL2 for the last month",
+      "target_urls_or_sites": ["https://amazon.ca/dp/B08WRBGSL2"],
+      "data_to_extract": [
+        {"field_name": "price", "description": "The current selling price of the product"},
+        {"field_name": "title", "description": "The full title of the product"},
+        {"field_name": "customer_reviews_text", "description": "Text content of customer reviews"}
+      ],
+      "constraints": {
+        "time_period": "last month" // Extracted from query
+      },
+      "url_health_status": {"https://amazon.ca/dp/B08WRBGSL2": "healthy"},
+      "validation_status": "user_approved", // Final status
+      "critique_history": ["Initial LLM thought reviews might need specific date filtering, but clarified it means recent reviews."], // Example of internal critique
+      "clarification_questions_for_user": [], // Empty after successful clarification/validation
+      "human_approval_notes": "Approved after confirming 'last month' review scope." // Human note
+    }
+    ```
 
-  - Implementation Options:
+- **Additional Test Cases:**
 
-     
+  - **Multi-turn Feedback:** Test multiple rounds of human feedback leading to a final approved spec.
+  - **LLM Self-Correction:** Input that initially generates a flawed spec which is then corrected by the LLM-as-a-Judge *before* human review.
+  - **URL Health Failure:** Test scenario where a provided URL is unhealthy and this is caught, leading to `needs_user_clarification` or being flagged to the human.
+  - **Conflicting Constraints:** User provides conflicting information – how does the LLM handle it, and how clearly is this presented for resolution?
 
-    Several libraries and services can aid development, offering varied approaches for intent parsing:
+- **Notes:**
 
-    - **LangChain (MIT-licensed):** Easy orchestration of LLM calls with Pydantic OutputParsers to enforce `IntentSpec` schema. Vendor-agnostic, works with any LLM (OpenAI, Anthropic, local). Example: `parser = PydanticOutputParser(pydantic_object=IntentSpec); chain.run_and_parse(input=user_text)`.
-    - **OpenAI Python SDK Function Calling:** Defines `IntentSpec` as a JSON schema for direct structured output. Tied to OpenAI but minimizes prompt engineering. Example: Define `infer_intent` function schema and parse response with `function_call.arguments`.
-    - **Rasa NLU (Apache-2.0):** Intent classification and entity extraction via trainable models for offline use. Requires annotation but offers high accuracy.
-    - **spaCy + spaCy-Transformer (MIT-licensed):** Token-level NER and custom rules for URL/entity extraction before/after LLM. Lightweight but manual setup.
-    - **Typer (MIT-licensed):** CLI parsing for structured inputs (`--url`, `--extract`) directly into Pydantic models. Complements LLM for free-text. Example: `app.command()(flags: Flags = typer.Argument(...))`.
-    - **Commercial NLU Services (Google Dialogflow, Microsoft LUIS, Amazon Lex):** Outsourced intent detection and slot filling via API, mappable to `IntentSpec`.
+  - **Permissivity & Refinement:** The system uses LLMs to interpret diverse inputs. The iterative refinement (LLM-as-Judge + Human Feedback) is key to handling ambiguities and improving accuracy. It does not *make assumptions* about technical details like JavaScript requirements (that's for Scout); it focuses on capturing the *user's intent* regarding *what data* from *what sources* under *what conditions*.
+  - **Schema Focus:** The `IntentSpec` JSON schema is the contract. Its primary purpose is to define *what* the user wants, not *how* to get it.
+  - **Autonomy (within its scope):** Operates by taking text and context, producing a refined `IntentSpec`.
 
-  - **Pydantic Role:** Pydantic enforces `IntentSpec` schema, ensuring consistent output and catching malformed intents (e.g., missing URL) via validation errors, which can be logged as feedback for refinement. In the long run, feedback from `evaluator/` (e.g., failed runs due to poor intent parsing) stored in `knowledge_base/` can inform `intent_inference/` improvements or redirect `pipeline_builder` with adjusted strategies (e.g., alternative tools if intent was misparsed as not needing JavaScript).
+- **Implementation Options (as per your detailed Python plan):**
 
-  - **Recommendation:** A hybrid stack of Typer (CLI parsing), Pydantic (schema/validation), and LangChain/OpenAI SDK (LLM parsing) balances flexibility, control, and error detection for V1, with feedback loops enhancing accuracy over time.
+  - Primarily **LangChain (MIT-licensed)** for orchestrating LLM calls (`intent_chain`, `feedback_chain`, `validation_chain`) with `PydanticOutputParser` for schema enforcement (or direct LLM JSON mode if preferred).
+  - **Pydantic V2** for defining all data models (`IntentSpec`, `ContextStore`, etc.) and performing data validation.
+  - **`httpx`** for asynchronous URL health checks.
+  - Python's built-in `argparse` and `asyncio` for the `cli.py`.
+  - LLM provider: **OpenAI GPT models** (e.g., `gpt-4-turbo-preview`, `gpt-3.5-turbo`) are used in the example code. This is configurable.
+
+- **Pydantic Role:** Enforces the `IntentSpec` and intermediate schemas. Catches structural errors in LLM outputs if `PydanticOutputParser` is used. The structure of `IntentSpec` (e.g., `validation_status`, `clarification_questions_for_user`, `critique_history`) is designed to support the iterative refinement and HITL process.
+
+- **Recommendation:** The detailed Python-based implementation plan you've drafted, using LangChain, Pydantic, and a clear agent-based orchestration, is the direct path forward for V1. This aligns with building a robust, self-correcting, and human-in-the-loop system.
 
 
 
@@ -281,40 +332,24 @@
 
 ### 9. evaluator/ (P2 - Medium Priority)
 
-- **One-Line Goal:** Analyze execution results, diagnose errors, clean outputs, and trigger intelligent feedback loops.
+- **One-Line Goal:** Analyze execution results, diagnose errors, perform basic cleaning for analysis, and trigger intelligent feedback loops.
 - Encapsulated Features:
   - **Error Analysis:** Identify specific failure types (selector not found, anti-bot detection, timeouts) and map them to potential causes.
   - **Page Structure Analysis:** Examine HTML to find alternative selectors or extraction patterns when standard approaches fail.
   - **Fix Suggestion:** Generate actionable recommendations for pipeline adjustments, selector modifications, or tool changes.
   - **Output Validation:** Ensure extracted fields match `IntentSpec` requirements (e.g., all requested fields present).
-  - **Advanced Cleaning:** Remove HTML artifacts like `<br>`, format numbers for "price", and create transformation rules for data normalization.
+  - **Basic Cleaning:** Perform minimal cleaning necessary for proper analysis (remove basic HTML tags, normalize whitespace).
   - **Quality Scoring:** Evaluate completeness and accuracy based on predefined or dynamic criteria.
   - **Feedback Routing:** Direct issues to appropriate modules (e.g., `pipeline_builder` for pipeline flaws, `intent_inference` for intent misinterpretation).
-- Key CLI Regression Tests:
-  - `brain evaluate <run_id>` (assess output quality or diagnose errors, verify cleaned JSON and feedback suggestions).
-  - `brain analyze <run_id>` (detailed diagnostic for failed runs with fix recommendations).
-  - `brain clean <run_id>` (apply advanced cleaning to results with HTML artifacts).
-- **Status:** Backlog.
-- **Priority Rationale:** Now Medium Priority (P2, Order 9) as it not only validates outputs but provides critical diagnostic capabilities for error recovery, substantially improving user experience through intelligent feedback and remediation.
-- **Development Completion Note:** Must be fully implemented (error analysis, structure analysis, recommendation generation, validation, cleaning) and tested before moving to `knowledge_base/`. Tests must confirm both successful output cleaning and accurate error diagnosis with actionable fix suggestions.
-- **Dependencies:** Takes output from `executor/` (success results or error reports), references `IntentSpec` from `intent_inference/` for validation, integrates with `progress_tracker/` for status logging, and updates/references `knowledge_base/` for learned patterns.
 - Input/Output Specifications:
   - **Input Example (Success Case):** `{"price": "123.00<br>", "title": "<b>Mon Produit Incroyable</b>"}`, with associated `IntentSpec` and `run_id`.
   - **Input Example (Error Case):** `{"error": {"type": "selector_not_found", "selector": ".price-whole", "page_content": "<!DOCTYPE html>..."}}`, with associated `IntentSpec` and `run_id`.
-  - **Output Example (Cleaned & Scored):** `{"cleaned_result": {"price": "123.00", "title": "Mon Produit Incroyable"}, "quality_score": 0.9, "feedback": "All requested fields present and clean"}`.
+  - **Output Example (Analyzed & Basic Cleaned):** `{"basic_cleaned_result": {"price": "123.00", "title": "Mon Produit Incroyable"}, "quality_score": 0.9, "feedback": "All requested fields present"}`.
   - **Output Example (Error Analysis):** `{"analysis": {"error_type": "selector_not_found", "possible_causes": ["Site layout change"], "suggested_selectors": [".s-item__price"]}, "recommendations": [{"action": "update_selector", "target": "price", "new_value": ".s-item__price"}]}`.
-- Additional Test Cases:
-  - Edge Case: Output with mixed HTML and text (expect full cleanup to plain text).
-  - Error Case: Missing mandatory fields per `IntentSpec` (expect low score and feedback to adjust pipeline or intent).
-  - Diagnostic Case: Anti-bot detection (expect recommendation for stealth mode or proxy).
-  - Learning Case: Test knowledge updating after successful fix (expect pattern to be stored for future runs).
 - Notes:
-  - **Dual Role:** Functions as both output validator for successful runs and diagnostic expert for failed runs, creating a unified approach to result assessment.
-  - **Pattern Recognition:** Uses heuristic rules and knowledge base patterns to identify common error signatures and suggest appropriate fixes.
-  - **Output Cleaning:** Ensures JSON output matches user intent (e.g., "price" as numeric, no HTML in "title"). Basic cleaning initially in `executor`, advanced validation and transformation here.
-  - **Feedback Loop:** Creates a learning cycle where successful fixes update the knowledge base, improving future pipeline generation and error recovery.
-  - **Simplification:** Start with rule-based approaches for common errors in V1, deferring complex LLM-based HTML analysis to later phases.
-  - **Integration Points:** Works bidirectionally with both `executor/` (receiving results/errors) and `pipeline_builder/` (suggesting pipeline modifications), forming a self-improving system.
+  - **Focused Role:** Primarily concerned with validating extraction success and diagnosing failures
+  - **Basic Cleaning Only:** Performs minimal cleaning necessary for analysis (removing obvious HTML tags)
+  - **Semantic Validation:** Checks if the data makes sense given the intent (e.g., price is present for product intent)
 
 ### 10. knowledge_base/ (P3 - Low Priority)
 
@@ -339,30 +374,58 @@
   - **Autonomy:** Passive store/retrieve system, providing raw data to `pipeline_builder` without decision-making logic.
   - **Feedback Storage:** Stores all runs (success/failure) for long-term learning, supporting feedback loops.
 
-### 11. aggregator/ (P4 - Very Low Priority)
+### 11. output_processor/ (Renamed from aggregator/) (P4 - Medium Priority)
 
-- **One-Line Goal:** Merge multiple JSON runs into consolidated output.
+- **One-Line Goal:** Apply deep cleaning to individual results and merge multiple JSON runs when needed.
+
 - Encapsulated Features:
-  - `merge(tag)` command to combine results from multiple scraping runs under a shared tag or identifier.
-  - Schema normalization to ensure consistent formatting across merged results, leveraging an LLM to intelligently map fields (e.g., aligning "price" and "cost" to a unified key), rename columns, and restructure data dynamically for coherence.
-  - Consolidated JSON output aggregating data from multiple runs into a unified structure.
-  - **Staging Mechanism:** Use a secondary database or in-memory staging structure to temporarily hold data during manipulation, ensuring original scraped results remain untouched until the aggregated output is finalized and validated.
-- Key CLI Regression Tests:
-  - `brain merge tag=jobs` (merge results tagged with a specific identifier, verify consolidated output).
-- **Status:** Backlog.
-- **Priority Rationale:** Eleventh and final module (P4, Order 11) as it provides an advanced feature for merging results, outside the scope of the basic V1 scraping flow but useful for broader use cases (e.g., combining multiple scrapes).
-- **Development Completion Note:** Last module to complete, after all others are fully implemented and tested. Tests must confirm multiple results can be merged into a coherent JSON output.
-- **Dependencies:** Takes outputs from `executor/` or `evaluator/` (scraped results with tags), may store staging data temporarily.
+
+  - Deep Data Cleaning:
+
+    Apply comprehensive cleaning and normalization to single run data:
+
+    - Remove all HTML artifacts
+    - Format field values according to semantic type (prices, dates, etc.)
+    - Standardize field names and structure
+    - Apply data transformations based on IntentSpec
+
+  - **Schema Normalization:** Ensure consistent formatting across results, leveraging an LLM to intelligently map fields (e.g., aligning "price" and "cost" to a unified key).
+
+  - **Multi-Run Merging:** Combine multiple runs into a consolidated output when needed.
+
+  - **Type Conversion:** Apply appropriate type conversions (string to number, date parsing, etc.) based on field semantics.
+
+  - **Consistent Structure:** Ensure output JSON matches expected structure defined in IntentSpec.
+
 - Input/Output Specifications:
-  - **Input Example (Run Results):** Multiple JSON files or DB entries tagged with "jobs", e.g., `{"tag": "jobs", "data": {"price": "123.00", "item_name": "Product A"}}, {"tag": "jobs", "data": {"cost": "456.00", "title": "Product B"}}`.
-  - **Intermediate Mapping (LLM Output):** LLM processes to map fields, e.g., `{"normalized_data": [{"price": "123.00", "title": "Product A"}, {"price": "456.00", "title": "Product B"}]}` (stored in staging DB/structure).
-  - **Output Example (Merged Result):** `{"tag": "jobs", "merged_data": [{"price": "123.00", "title": "Product A"}, {"price": "456.00", "title": "Product B"}]}` (finalized post-LLM normalization).
-- Additional Test Cases:
-  - Edge Case: Merging runs with conflicting schemas (expect LLM-driven normalization or detailed error report if unmappable).
-  - Error Case: No runs found for tag (expect empty result or user notification).
-  - LLM Mapping Case: Test field renaming (e.g., "cost" to "price") and restructuring (expect consistent unified schema).
+
+  - **Input Example (Single Run):** `{"basic_cleaned_result": {"price": "123.00", "title": "Mon Produit Incroyable"}, "quality_score": 0.9}`.
+  - **Input Example (Multiple Runs):** Multiple results with tag "jobs".
+  - **Output Example (Single Deep Cleaned):** `{"processed_result": {"price": 123.00, "title": "Mon Produit Incroyable"}, "processing_notes": ["Converted price to number", "Fixed capitalization"]}`.
+  - **Output Example (Merged Result):** `{"tag": "jobs", "merged_data": [{"price": 123.00, "title": "Product A"}, {"price": 456.00, "title": "Product B"}]}`.
+
 - Notes:
-  - **LLM Integration:** Utilize an LLM to intelligently aggregate and normalize data, mapping disparate fields (e.g., "price" and "cost" to "price") and restructuring inconsistent JSON outputs into a unified schema. This reduces manual rule-coding and adapts to varied data formats dynamically.
-  - **Staging Mechanism:** Implement a secondary database (e.g., temporary SQLite table) or in-memory structure to stage data during LLM processing, preserving original results until the aggregated output is validated and confirmed correct. This ensures data integrity and allows rollback if mapping fails.
-  - Focus on simple merging logic in V1 with basic LLM mapping, deferring complex normalization or large-scale DB setups to later phases.
-  - Enhances usability for users running multiple scrapes but not critical for initial flow.
+
+  - **Dual Functions:** Handles both deep cleaning of individual results and merging of multiple results
+  - **Always Cleans:** Every successful run passes through output_processor for consistent formatting
+  - **LLM Integration:** Uses LLM for complex normalization decisions and field mapping
+  - **IntentSpec Driven:** Uses intent specifications to determine appropriate formatting
+  - **User-Ready Output:** This module is responsible for the final polish on the data before it's stored permanently or presented to the user.
+  - LLM Mapping Case: Test field renaming and restructuring for both single (if target schema differs from raw) and multi-run scenarios.
+
+### 12. scout/ (P1 - High Priority)
+- One-Line Goal: Analyze websites to determine technical requirements and structure
+- Encapsulated Features:
+  - Check URL validity and accessibility
+  - Detect JavaScript requirements and page rendering needs
+  - Identify anti-bot measures, login walls, or proxy blocks
+  - Map available data fields and their selectors
+  - Determine site navigation patterns (pagination, detail pages)
+
+### 13. orchestrator/ (P1 - High Priority)
+- One-Line Goal: Coordinate flow between modules and manage execution state
+- Encapsulated Features:
+  - Run ID generation and context tracking
+  - Sequential invocation of modules with proper error handling
+  - Status updates via progress_tracker
+  - Decision-making for retries or fallbacks

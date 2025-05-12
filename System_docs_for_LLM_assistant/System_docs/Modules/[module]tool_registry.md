@@ -1,4 +1,4 @@
-# [Module] tool_registry
+# [module] tool_registry
 
 tool_registry/
   ├── __init__.py

@@ -1,6 +1,6 @@
-#  Module CLI
+#  [module] CLI
 
-# Module Development Plan: cli/
+Module Development Plan: cli/
 
 ## Status: Backlog - Ready for Implementation
 
