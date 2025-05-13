@@ -1,5 +1,5 @@
 # The Brain AI Scraper - Core Dependencies
-pydantic>=1.10.0,<2.0.0  # For data validation and settings management
+pydantic>=2.0.0  # For data validation and settings management
 typer>=0.7.0  # CLI framework
 rich>=12.0.0  # For beautiful terminal output
 pytest>=7.0.0  # For testing
@@ -9,3 +9,7 @@ redis>=4.3.4  # Event system (primary)
 httpx>=0.23.0  # HTTP client
 fastapi>=0.95.0  # API framework
 python-dotenv>=1.0.0  # For loading .env files
+tenacity>=8.2.0  # For retry logic
+langchain>=0.3.0  # LangChain core functionality
+langchain-openai>=0.0.2  # OpenAI integration for LangChain
+langchain-anthropic>=0.0.1  # Anthropic integration for LangChain

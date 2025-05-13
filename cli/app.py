@@ -71,7 +71,7 @@ def version() -> None:
 # Import command groups - must be after app is created to avoid circular imports
 from cli.commands.tool import app as tool_app
 from cli.commands.config import app as config_app
-from cli.commands.scrape.execute_graph import scrape  # Using our LangGraph implementation
+from cli.commands.scrape.execute import scrape  # Using our LangGraph implementation
 
 # Add the command groups to the main app
 app.add_typer(tool_app, name="tools", help="Manage scraping tools")

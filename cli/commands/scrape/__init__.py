@@ -13,10 +13,7 @@ from typing import Optional
 app = typer.Typer(help="Execute scraping operations")
 
 # Import commands after app is created to avoid circular imports
-# DEPRECATED: from cli.commands.scrape.execute import scrape
-# DEPRECATED: from cli.commands.scrape.execute_langchain import scrape
-# Using the proper LangGraph-based implementation
-from cli.commands.scrape.execute_graph import scrape
+from cli.commands.scrape.execute import scrape
 
 # Register commands directly with the app
 app.command("execute")(scrape)

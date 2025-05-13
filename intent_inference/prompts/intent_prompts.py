@@ -12,68 +12,71 @@ INTENT_SYSTEM_PROMPT = """You are an expert web scraping assistant specializing 
 Your job is to analyze the user's scraping request and extract:
 1. Target URLs or website domains
 2. Specific data fields to extract
-3. Any constraints or special requirements
+3. Technical requirements for scraping
 
 GUIDELINES:
 - Extract EXACTLY what the user wants - no more, no less
 - If URLs are provided, use them exactly
 - If only domains are mentioned (like "amazon.com"), include them as-is
-- For each data field, provide a clear description of what it represents
-- If time periods, quantities, or other constraints are mentioned, capture them
-- Do NOT make assumptions about implementation details or technical requirements
+- For each data field, provide a clear name and optional description of what it represents
+- Detect if JavaScript rendering might be needed (e.g., for dynamic sites like Amazon)
+- Common sites needing JavaScript: Amazon, eBay, modern e-commerce sites, SPAs
 
 OUTPUT FORMAT:
 You MUST respond with a valid JSON object containing these fields:
-- target_urls_or_sites: Array of URLs or domains mentioned
-- data_to_extract: Array of objects with "field_name" and "description"
-- constraints: Object with any constraints mentioned (time periods, limits, etc.)
+- target_urls: Array of URLs or domains mentioned
+- data_to_extract: Array of objects with "name" and "description"
+- technical_requirements: Array of strings for requirements like "html_parsing", "javascript_rendering"
 """
 
 # User message template for new intent extraction
 INTENT_USER_TEMPLATE = """Extract the structured intent specification from this scraping request:
 
-{user_query}
+{query}
 
-Return ONLY the JSON with no explanations.
-"""
+Remember to format your response as a valid JSON object."""
 
-# Complete prompt template for intent extraction
+# Create the prompt template
 intent_extraction_prompt = ChatPromptTemplate.from_messages([
     ("system", INTENT_SYSTEM_PROMPT),
     ("human", INTENT_USER_TEMPLATE),
 ])
 
-# System prompt for the intent extraction with context from previous critiques
-INTENT_WITH_CONTEXT_SYSTEM_PROMPT = """You are an expert web scraping assistant specializing in converting natural language requests into structured specifications.
+# System prompt for intent extraction with context
+INTENT_WITH_CONTEXT_PROMPT = """You are an expert web scraping assistant specializing in converting natural language requests into structured specifications.
 
 Your job is to analyze the user's scraping request and extract:
 1. Target URLs or website domains
 2. Specific data fields to extract
-3. Any constraints or special requirements
+3. Technical requirements for scraping
 
 GUIDELINES:
 - Extract EXACTLY what the user wants - no more, no less
 - If URLs are provided, use them exactly
 - If only domains are mentioned (like "amazon.com"), include them as-is
-- For each data field, provide a clear description of what it represents
-- If time periods, quantities, or other constraints are mentioned, capture them
-- Do NOT make assumptions about implementation details or technical requirements
+- For each data field, provide a clear name and optional description
+- Detect if JavaScript rendering might be needed (e.g., for dynamic sites like Amazon)
+- Consider any previous critiques or errors in your analysis (provided as context)
 
 OUTPUT FORMAT:
 You MUST respond with a valid JSON object containing these fields:
-- target_urls_or_sites: Array of URLs or domains mentioned
-- data_to_extract: Array of objects with "field_name" and "description"
-- constraints: Object with any constraints mentioned (time periods, limits, etc.)
-
-IMPORTANT CONTEXT:
-Your previous attempt had these issues that need to be addressed:
-{critique_hints}
-
-Please ensure your revised specification addresses these issues.
+- target_urls: Array of URLs or domains mentioned
+- data_to_extract: Array of objects with "name" and "description"
+- technical_requirements: Array of strings for requirements like "html_parsing", "javascript_rendering"
 """
 
-# Complete prompt template for intent extraction with context
+# User message template for intent extraction with context
+INTENT_WITH_CONTEXT_TEMPLATE = """Extract the structured intent specification from this scraping request:
+
+{query}
+
+Previous Critiques:
+{context}
+
+Remember to format your response as a valid JSON object."""
+
+# Create the prompt template with context
 intent_with_context_prompt = ChatPromptTemplate.from_messages([
-    ("system", INTENT_WITH_CONTEXT_SYSTEM_PROMPT),
-    ("human", INTENT_USER_TEMPLATE),
+    ("system", INTENT_WITH_CONTEXT_PROMPT),
+    ("human", INTENT_WITH_CONTEXT_TEMPLATE),
 ])

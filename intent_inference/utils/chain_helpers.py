@@ -2,11 +2,17 @@
 Helper utilities for LangChain components in the intent inference module.
 
 This module provides utility functions for working with LangChain, including
-LLM configuration and shared chain components.
+LLM configuration, shared chain components, and retry logic for API calls.
 """
-from typing import Dict, Any, Optional
+import logging
+from typing import Dict, Any, Optional, Union, TypeVar, cast
 import os
-from langchain_core.language_models import BaseChatModel
+import asyncio
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from langchain_core.language_models import BaseLanguageModel
+from langchain_core.output_parsers import BaseOutputParser, StrOutputParser
+from langchain_core.prompts import BasePromptTemplate
+from langchain_core.messages import BaseMessage
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langsmith.run_helpers import traceable
@@ -15,8 +21,11 @@ from langchain.callbacks.tracers import LangChainTracer
 # Import from config_secrets module to get API keys
 from config_secrets import get_secret, get_required_secret, SecretNotFoundError
 
+# Configure module logger
+logger = logging.getLogger(__name__)
 
-def get_llm(model_name: Optional[str] = None, trace_name: Optional[str] = None) -> BaseChatModel:
+
+def get_llm(model_name: Optional[str] = None, trace_name: Optional[str] = None) -> BaseLanguageModel:
     """
     Get a configured LLM instance based on preferences and available API keys.
     
@@ -94,3 +103,77 @@ def get_default_model_kwargs() -> Dict[str, Any]:
         "temperature": 0.2,
         "max_tokens": 4000,
     }
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+    retry=retry_if_exception_type((ConnectionError, TimeoutError, Exception)),
+    before_sleep=lambda retry_state: logger.warning(
+        f"Retrying LLM call after error. Attempt {retry_state.attempt_number}/3"
+    )
+)
+async def call_llm_with_retry(
+    llm: BaseLanguageModel,
+    prompt: Union[BasePromptTemplate, str],
+    inputs: Dict[str, Any]
+) -> str:
+    """
+    Call an LLM with retry logic for handling transient errors.
+    
+    Args:
+        llm: The language model to use
+        prompt: The prompt template or string
+        inputs: Input values for the prompt
+        
+    Returns:
+        LLM response as a string
+    
+    Raises:
+        Exception: If all retry attempts fail
+    """
+    logger.info(f"Calling LLM with inputs: {list(inputs.keys())}")
+    
+    try:
+        # Create chain with the prompt and LLM
+        chain = prompt | llm
+        
+        # Call the chain
+        result = await chain.ainvoke(inputs)
+        
+        if isinstance(result, BaseMessage):
+            return result.content
+        return str(result)
+    except Exception as e:
+        logger.error(f"Error in LLM call: {str(e)}")
+        raise
+
+def call_llm_with_retry(
+    chain, 
+    inputs: Dict[str, Any]
+) -> str:
+    """
+    Synchronous wrapper for calling a chain with retry logic.
+    
+    Args:
+        chain: The LangChain runnable chain to use
+        inputs: Input values for the chain
+        
+    Returns:
+        Chain response as a string
+    
+    Raises:
+        Exception: If all retry attempts fail
+    """
+    logger.info(f"Calling chain with inputs: {list(inputs.keys())}")
+    
+    try:
+        # Call the chain synchronously
+        result = chain.invoke(inputs)
+        
+        if isinstance(result, BaseMessage):
+            return result.content
+        return str(result)
+    except Exception as e:
+        logger.error(f"Error in chain call: {str(e)}")
+        raise

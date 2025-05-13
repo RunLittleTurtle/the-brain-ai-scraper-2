@@ -3,10 +3,15 @@
 ```mermaid
 kanban
 Backlog
-    9.Unit Testing: Write tests for components
     10.Integration Testing: End-to-end testing
 LLM_In_Progress
+    12.Centralized Parsing: Create utils/parsing.py utility
+    13.Retry Mechanism: Add LLM retry logic in chain_helpers.py
+    14.Refactor Functions: Break down apply_feedback_to_spec
+    15.Enhance Validation: Improve error handling in validation_chain.py
+    16.Add Logging: Improve logging across all components
 LLM_Testing
+    9.Unit Testing: Write tests for components
     11.Public API: Define __init__.py exports, 6
 LLM_Test_Complete
     1.Project Setup: Set up project structure and dependencies

@@ -6,7 +6,7 @@ including the original user query, current intent specification, and critique hi
 """
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
-from .intent_spec import IntentSpec
+from models.intent.intent_spec import IntentSpec
 
 
 class ContextStore(BaseModel):
