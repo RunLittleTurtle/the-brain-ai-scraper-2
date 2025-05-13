@@ -1,198 +1,225 @@
 """
-Main orchestration logic for the intent inference module.
+FastAPI application for the Intent Inference module.
 
-This module provides the core API for the intent inference system, transforming
-user input into structured intent specifications with validation and human review.
+This module provides API endpoints for processing intent inference requests
+and integrating with LangGraph Studio and LangSmith.
 """
-from typing import Optional, List, Dict, Any, Tuple, Union
-import logging
-import asyncio
 import os
+from typing import Dict, Any, Optional, List
+import uuid
+from datetime import datetime
 
-# Import the shared model
-from models.intent.intent_spec import IntentSpec, FieldToExtract
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-# Import context store
-from intent_inference.models.context import ContextStore
+from langchain_openai import ChatOpenAI
+from langgraph.persist import MemorySaver
+from langsmith import Client
+from langsmith.run_helpers import traceable
 
-# Import LangGraph implementation
-from intent_inference.graph.app import process_input, process_input_sync
-
-# Import LangSmith utilities
-from intent_inference.utils.langsmith_utils import get_runnable_config, trace_intent_inference
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+from intent_inference.graph.workflow import create_intent_inference_graph, create_initial_state
+from intent_inference.graph.state import GraphState, InputType, ContextStore, IntentSpec
 
 
-class IntentInferenceAgent:
+# Initialize LangSmith tracing
+from intent_inference.utils.visualization import setup_langsmith_tracing
+setup_langsmith_tracing()
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Intent Inference API",
+    description="API for processing user intents with LangGraph",
+    version="0.1.0",
+)
+
+# Add CORS middleware to allow connections from LangGraph Studio
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development; restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize LLM - will read from environment variables
+llm = ChatOpenAI(
+    model="gpt-4",  # Default model, can be overridden by env vars
+    temperature=0,  # Use deterministic output for intent inference
+)
+
+# Initialize graph with memory-based checkpointing
+memory_saver = MemorySaver()
+intent_graph = create_intent_inference_graph(llm).with_checkpointer(memory_saver)
+
+# Store active threads
+threads: Dict[str, Any] = {}
+
+
+# Request and response models
+class IntentRequest(BaseModel):
+    """Request for new intent processing."""
+    user_query: str
+
+
+class FeedbackRequest(BaseModel):
+    """Request for feedback on existing intent."""
+    thread_id: str
+    feedback: str
+
+
+class HumanReviewRequest(BaseModel):
+    """Request for human review decision."""
+    thread_id: str
+    approved: bool
+    feedback: Optional[str] = None
+
+
+class IntentResponse(BaseModel):
+    """Response for intent processing."""
+    thread_id: str
+    state: Dict[str, Any]
+    needs_human_review: bool
+    intent_spec: Optional[Dict[str, Any]] = None
+
+
+@app.get("/")
+async def root():
+    """Root endpoint for health check."""
+    return {"status": "Intent Inference API is running"}
+
+
+@app.post("/infer", response_model=IntentResponse)
+async def infer_intent(request: IntentRequest, background_tasks: BackgroundTasks):
     """
-    Agent for intent inference with LangGraph implementation.
-
-    This class provides backward compatibility with the previous implementation
-    while using the new LangGraph-based workflow internally.
+    Process a new intent from user query.
+    
+    This endpoint starts a new intent inference process for the provided
+    user query, returning the created thread ID and initial state.
     """
-    def __init__(self, context_store: Optional[ContextStore] = None):
-        """Initialize the agent with an optional existing context store."""
-        self.context_store = context_store or ContextStore()
-
-    @trace_intent_inference
-    def infer_intent(self, user_input: str) -> Optional[IntentSpec]:
-        """
-        Process user input into an intent specification.
-
-        Args:
-            user_input: User's query text
-
-        Returns:
-            IntentSpec with the parsed intent
-        """
-        try:
-            # Use the new LangGraph implementation
-            is_feedback = False
-            previous_spec = None
-
-            # Check if we have context that indicates this is feedback
-            if self.context_store and self.context_store.last_spec:
-                is_feedback = self.context_store.is_feedback
-                previous_spec = self.context_store.last_spec
-
-            # Configure LangSmith tracing
-            config = {
-                "tags": ["intent_inference", "user_request"],
-                "metadata": {
-                    "user_input": user_input[:100],  # First 100 chars of input
-                    "is_feedback": is_feedback
-                }
-            }
-
-            # Process the input
-            intent_spec, needs_human = process_input_sync(
-                user_input=user_input,
-                previous_spec=previous_spec,
-                is_feedback=is_feedback,
-                config=get_runnable_config(**config)
-            )
-
-            # Update the context store
-            if intent_spec:
-                self.context_store.update_last_spec(intent_spec)
-
-            return intent_spec
-        except Exception as e:
-            logger.error(f"Error in intent inference: {str(e)}")
-            return self._create_minimal_intent_spec(user_input)
-
-    async def run_with_approval(self, user_input: str) -> Optional[IntentSpec]:
-        """
-        Run the intent inference process with human approval.
-
-        Args:
-            user_input: User's query or feedback text
-
-        Returns:
-            Approved IntentSpec or None if approval failed
-        """
-        # Use the new LangGraph implementation
-        is_feedback = self.context_store.is_feedback if self.context_store else False
-        previous_spec = self.context_store.last_spec if self.context_store else None
-
-        try:
-            # Process the input
-            intent_spec, needs_human = await process_input(
-                user_input=user_input,
-                previous_spec=previous_spec,
-                is_feedback=is_feedback
-            )
-
-            # For backward compatibility, just return the spec
-            # In a real implementation, this would involve human approval
-            if intent_spec:
-                if self.context_store:
-                    self.context_store.update_last_spec(intent_spec)
-
-            return intent_spec
-        except Exception as e:
-            logger.error(f"Error in intent inference with approval: {str(e)}")
-            return None
-
-    def _create_minimal_intent_spec(self, user_input: str) -> IntentSpec:
-        """Create a minimal intent spec when parsing fails."""
-        # Extract potential URL from query if possible
-        import re
-        url_match = re.search(r'https?://[^\s]+', user_input)
-        url = url_match.group(0) if url_match else "https://example.com"
-
-        return IntentSpec(
-            original_query=user_input,
-            target_urls=[url],
-            fields_to_extract=[FieldToExtract(name="content", description="Error occurred during intent inference")],
-            validation_status="error",
-            critique_history=["Failed to process intent, using fallback values"]
-        )
+    # Create initial state
+    initial_state = create_initial_state(request.user_query)
+    
+    # Create a new thread ID
+    thread_id = f"thread_{uuid.uuid4().hex[:8]}"
+    
+    # Start the graph execution
+    config = {"configurable": {"thread_id": thread_id}}
+    thread = intent_graph.start_with_state(initial_state, config=config)
+    
+    # Store the thread
+    threads[thread_id] = thread
+    
+    # Get initial state
+    state = thread.get_state()
+    
+    return IntentResponse(
+        thread_id=thread_id,
+        state=state.model_dump(),
+        needs_human_review=state.needs_human_review,
+        intent_spec=state.current_intent_spec.model_dump() if state.current_intent_spec else None
+    )
 
 
-@trace_intent_inference
-def infer_intent_sync(user_input: str, previous_spec: Optional[IntentSpec] = None, is_feedback: bool = False) -> Tuple[IntentSpec, bool]:
+@app.post("/feedback", response_model=IntentResponse)
+async def process_feedback(request: FeedbackRequest):
     """
-    Synchronous version of the intent inference process.
-
-    This function provides a direct interface for the CLI and other modules
-    to use the intent inference functionality with LangGraph.
-
-    Args:
-        user_input: User's query text
-        previous_spec: Optional previous spec if this is feedback
-        is_feedback: Whether to treat input as feedback
-
-    Returns:
-        Tuple of (IntentSpec, needs_human_review)
+    Process feedback for an existing intent.
+    
+    This endpoint processes feedback on an existing intent thread,
+    continuing the intent inference process with the feedback.
     """
-    if not user_input or not user_input.strip():
-        # Create minimal spec for empty input
-        minimal_spec = IntentSpec(
-            original_query="",
-            target_urls=["https://example.com"],
-            fields_to_extract=[FieldToExtract(name="content")],
-            validation_status="error",
-            critique_history=["Empty user input"]
-        )
-        return minimal_spec, True
+    # Check if thread exists
+    if request.thread_id not in threads:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    
+    # Get the thread
+    thread = threads[request.thread_id]
+    
+    # Get the current state
+    current_state = thread.get_state()
+    
+    # Update the state with feedback
+    updated_state = current_state.model_copy(deep=True)
+    updated_state.user_feedback = request.feedback
+    updated_state.context = updated_state.context.convert_to_feedback(request.feedback)
+    
+    # Continue the thread with the updated state
+    thread.update_state(updated_state)
+    result = thread.continue_async()
+    
+    # Get the updated state
+    state = thread.get_state()
+    
+    return IntentResponse(
+        thread_id=request.thread_id,
+        state=state.model_dump(),
+        needs_human_review=state.needs_human_review,
+        intent_spec=state.current_intent_spec.model_dump() if state.current_intent_spec else None
+    )
 
-    # Configure LangSmith tracing
-    config = {
-        "tags": ["intent_inference", "cli_request"],
-        "metadata": {
-            "user_input": user_input[:100],  # First 100 chars of input
-            "is_feedback": is_feedback
-        }
-    }
 
-    try:
-        # Use the new direct graph execution
-        return process_input_sync(
-            user_input=user_input,
-            previous_spec=previous_spec,
-            is_feedback=is_feedback,
-            config=get_runnable_config(**config)
-        )
-    except Exception as e:
-        # Log the error
-        logger.error(f"Error in infer_intent_sync: {str(e)}")
+@app.post("/human-review", response_model=IntentResponse)
+async def submit_human_review(request: HumanReviewRequest):
+    """
+    Submit human review decision for an intent.
+    
+    This endpoint processes a human review decision (approval or rejection)
+    for an intent that is awaiting human review.
+    """
+    # Check if thread exists
+    if request.thread_id not in threads:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    
+    # Get the thread
+    thread = threads[request.thread_id]
+    
+    # Get the current state
+    current_state = thread.get_state()
+    
+    # Update the state with human review decision
+    updated_state = current_state.model_copy(deep=True)
+    updated_state.human_approval = request.approved
+    
+    if not request.approved and request.feedback:
+        updated_state.user_feedback = request.feedback
+    
+    # Continue the thread with the updated state
+    thread.update_state(updated_state)
+    result = thread.continue_async()
+    
+    # Get the updated state
+    state = thread.get_state()
+    
+    return IntentResponse(
+        thread_id=request.thread_id,
+        state=state.model_dump(),
+        needs_human_review=state.needs_human_review,
+        intent_spec=state.current_intent_spec.model_dump() if state.current_intent_spec else None
+    )
 
-        # Extract potential URL from query if possible
-        import re
-        url_match = re.search(r'https?://[^\s]+', user_input)
-        url = url_match.group(0) if url_match else "https://example.com"
 
-        # Create a minimal error spec to avoid breaking downstream components
-        error_spec = IntentSpec(
-            original_query=user_input,
-            target_urls=[url],
-            fields_to_extract=[FieldToExtract(name="content", description="Error occurred during intent inference")],
-            validation_status="error",
-            critique_history=[f"Failed to process intent: {str(e)}"]
-        )
+@app.get("/threads/{thread_id}", response_model=IntentResponse)
+async def get_thread_state(thread_id: str):
+    """
+    Get the current state of a thread.
+    
+    This endpoint returns the current state of an intent inference thread.
+    """
+    if thread_id not in threads:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    
+    thread = threads[thread_id]
+    state = thread.get_state()
+    
+    return IntentResponse(
+        thread_id=thread_id,
+        state=state.model_dump(),
+        needs_human_review=state.needs_human_review,
+        intent_spec=state.current_intent_spec.model_dump() if state.current_intent_spec else None
+    )
 
-        return error_spec, True
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("intent_inference.main:app", host="0.0.0.0", port=8000, reload=True)

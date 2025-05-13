@@ -1,22 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-intent_inference module - Transform user input into structured intent specs.
+Intent Inference Module for The Brain AI Scraper.
 
-This module provides functionality for inferring user intent from natural language
-input and transforming it into a structured specification for web scraping tasks.
+This module translates natural language user queries into structured intent specifications
+using LangGraph 0.4 for orchestration and Pydantic v2 for state management.
 """
-
-# Import and expose public API for direct use from other modules
-from intent_inference.main import IntentInferenceAgent, infer_intent_sync
-
-# Import the shared model
-from models.intent.intent_spec import IntentSpec, FieldToExtract
-
-__all__ = [
-    # Core functionality
-    'IntentInferenceAgent', 
-    'infer_intent_sync',
-    'IntentSpec',
-    'FieldToExtract'
-]

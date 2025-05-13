@@ -1,37 +1,12 @@
 {
-  "title": "The Brain AI Scraper",
-  "description": "Intent inference workflow",
-  "dependencies": ["."],
+  "title": "Intent Inference Graph",
+  "python_version": "3.13",
   "env": ".env",
-  "config": {
-    "tracing": {
-      "type": "langsmith",
-      "project": "brain_ai_scraper"
-    }
-  },
-  "version": "v1",
-  "paths": {
-    "intent_inference.graph.app": {
-      "dependencies": [
-        "intent_inference.graph.subgraphs.intent_processing",
-        "intent_inference.graph.subgraphs.feedback_processing",
-        "intent_inference.graph.subgraphs.validation",
-        "intent_inference.graph.nodes"
-      ],
-      "sample_inputs": [
-        {
-          "context": {
-            "user_query": "Scrape product information from amazon.com for iPhones",
-            "is_feedback": false
-          }
-        }
-      ]
-    }
-  },
+  "dependencies": ["."],
   "graphs": {
     "intent_inference": {
-      "path": "intent_inference.graph.app:get_intent_graph",
-      "description": "Parse user query into intent_spec"
+      "path": "intent_inference/graph.py:create_intent_inference_graph",
+      "description": "Extract and validate intent from user queries"
     }
   }
 }
