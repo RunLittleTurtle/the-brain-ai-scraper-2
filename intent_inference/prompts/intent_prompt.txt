@@ -27,19 +27,19 @@ User Query: "Get me iPhone 14 Pro prices from Amazon and Best Buy for comparison
 
 Expected Response:
 ```json
-{
+{{
   "target_urls_or_sites": ["amazon.com", "bestbuy.com"],
   "data_to_extract": [
-    {"field_name": "product_title", "description": "Full product title of the iPhone 14 Pro"},
-    {"field_name": "current_price", "description": "Current selling price of the iPhone 14 Pro"},
-    {"field_name": "model_number", "description": "Model identifier of the iPhone 14 Pro"}
+    {{ "field_name": "product_title",   "description": "Full product title of the iPhone 14 Pro" }},
+    {{ "field_name": "current_price",   "description": "Current selling price of the iPhone 14 Pro" }},
+    {{ "field_name": "model_number",    "description": "Model identifier of the iPhone 14 Pro" }}
   ],
-  "constraints": {
+  "constraints": {{
     "product": "iPhone 14 Pro",
     "comparison_purpose": true
-  },
+  }},
   "reasoning": "The user wants to compare prices for iPhone 14 Pro across Amazon and Best Buy. I've included product title and model number to ensure we're comparing the exact same product variants."
-}
+}}
 ```
 
 Now, analyze the following user query and extract the intent specification:

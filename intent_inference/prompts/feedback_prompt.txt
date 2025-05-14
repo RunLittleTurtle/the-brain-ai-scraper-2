@@ -27,17 +27,17 @@ Feedback: "Actually, I also want to include Walmart and I need to see the availa
 
 Expected Response:
 ```json
-{
+{{
   "updated_target_urls": ["amazon.com", "bestbuy.com", "walmart.com"],
   "updated_data_fields": [
-    {"field_name": "product_title", "description": "Full product title of the iPhone 14 Pro"},
-    {"field_name": "current_price", "description": "Current selling price of the iPhone 14 Pro"},
-    {"field_name": "model_number", "description": "Model identifier of the iPhone 14 Pro"},
-    {"field_name": "available_colors", "description": "List of available color options for the iPhone 14 Pro"}
+    {{ "field_name": "product_title",    "description": "Full product title of the iPhone 14 Pro" }},
+    {{ "field_name": "current_price",    "description": "Current selling price of the iPhone 14 Pro" }},
+    {{ "field_name": "model_number",     "description": "Model identifier of the iPhone 14 Pro" }},
+    {{ "field_name": "available_colors", "description": "List of available color options for the iPhone 14 Pro" }}
   ],
   "reasoning": "Added Walmart to the target sites as requested. Also added 'available_colors' to the data fields since the user now wants color options information.",
   "requires_revalidation": true
-}
+}}
 ```
 
 Now, analyze the following feedback and update the intent specification accordingly:

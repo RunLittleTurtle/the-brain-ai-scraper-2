@@ -6,20 +6,34 @@ in the intent inference graph.
 """
 from typing import Dict, Literal, Any
 
-from intent_inference.graph.state import GraphState
+from intent_inference.graph.state import GraphState, ValidationStatus
 
 
-def route_validation(state: GraphState) -> Literal["valid", "invalid"]:
+def route_validation(state: GraphState) -> Literal["valid", "invalid", "needs_clarification", "url_issue", "missing_data"]:
     """
-    Route based on validation result.
+    Enhanced router based on the detailed validation status.
     
     Args:
         state: Current graph state
         
     Returns:
-        Routing decision: "valid" or "invalid"
+        Routing decision with more nuanced options based on validation status
     """
+    # Handle case with no validation result
     if state.validation_result is None:
         return "invalid"
     
-    return "valid" if state.validation_result.is_valid else "invalid"
+    # If valid, easy path
+    if state.validation_result.is_valid:
+        return "valid"
+    
+    # Use the enhanced status for more nuanced routing
+    status_mapping = {
+        ValidationStatus.NEEDS_CLARIFICATION: "needs_clarification",
+        ValidationStatus.URL_ISSUE: "url_issue",
+        ValidationStatus.MISSING_DATA: "missing_data",
+        # Default fallback
+        ValidationStatus.INVALID: "invalid"
+    }
+    
+    return status_mapping.get(state.validation_result.status, "invalid")

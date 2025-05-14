@@ -22,31 +22,31 @@ def prepare_for_human_review(state: GraphState) -> Dict[str, Any]:
     Returns:
         Updated graph state
     """
-    key_messages = state.key_messages
+    messages = state.messages
     
     # Check if we have a spec to review
     if state.current_intent_spec is None:
         error_message = "Cannot prepare for human review without an intent specification"
-        key_messages = add_system_message(key_messages, f"❌ {error_message}")
+        messages = add_system_message(messages, f"❌ {error_message}")
         
         return {
             "state": GraphState(
                 context=state.context,
                 error_message=error_message,
-                key_messages=key_messages,
+                messages=messages,
                 needs_human_review=False
             )
         }
     
     # Add system message about human review
-    key_messages = add_system_message(
-        key_messages,
+    messages = add_system_message(
+        messages,
         "👤 Waiting for human review and approval..."
     )
     
     # Add the intent specification for review
-    key_messages = add_assistant_message(
-        key_messages,
+    messages = add_assistant_message(
+        messages,
         f"📋 Please review this intent specification:\n\n{format_intent_spec_for_display(state.current_intent_spec)}",
         metadata={"spec_id": state.current_intent_spec.spec_id, "for_review": True}
     )
@@ -57,7 +57,7 @@ def prepare_for_human_review(state: GraphState) -> Dict[str, Any]:
             context=state.context,
             current_intent_spec=state.current_intent_spec,
             validation_result=state.validation_result,
-            key_messages=key_messages,
+            messages=messages,
             needs_human_review=True
         )
     }
@@ -73,17 +73,17 @@ def process_rejection(state: GraphState) -> Dict[str, Any]:
     Returns:
         Updated graph state
     """
-    key_messages = state.key_messages
+    messages = state.messages
     
     # Add rejection message
-    key_messages = add_system_message(
-        key_messages,
+    messages = add_system_message(
+        messages,
         f"👤 Human rejected the intent specification."
     )
     
     if state.user_feedback:
-        key_messages = add_user_message(
-            key_messages,
+        messages = add_user_message(
+            messages,
             f"💬 Rejection feedback: {state.user_feedback}"
         )
         
@@ -99,7 +99,7 @@ def process_rejection(state: GraphState) -> Dict[str, Any]:
             context=updated_context,
             current_intent_spec=state.current_intent_spec,
             validation_result=None,  # Clear validation result
-            key_messages=key_messages,
+            messages=messages,
             needs_human_review=False,
             human_approval=None  # Reset human approval
         )
@@ -116,17 +116,17 @@ def finalize_intent(state: GraphState) -> Dict[str, Any]:
     Returns:
         Updated graph state
     """
-    key_messages = state.key_messages
+    messages = state.messages
     
     if state.current_intent_spec is None:
         error_message = "Cannot finalize without an intent specification"
-        key_messages = add_system_message(key_messages, f"❌ {error_message}")
+        messages = add_system_message(messages, f"❌ {error_message}")
         
         return {
             "state": GraphState(
                 context=state.context,
                 error_message=error_message,
-                key_messages=key_messages
+                messages=messages
             )
         }
     
@@ -135,13 +135,13 @@ def finalize_intent(state: GraphState) -> Dict[str, Any]:
     final_spec.validation_status = "user_approved"
     
     # Add system message about approval
-    key_messages = add_system_message(
-        key_messages,
+    messages = add_system_message(
+        messages,
         f"✅ Intent specification approved by human reviewer!"
     )
     
-    key_messages = add_assistant_message(
-        key_messages,
+    messages = add_assistant_message(
+        messages,
         f"📦 Final Intent Specification ({final_spec.spec_id}):\n\n{format_intent_spec_for_display(final_spec)}",
         metadata={"final": True, "spec_id": final_spec.spec_id}
     )
@@ -152,7 +152,7 @@ def finalize_intent(state: GraphState) -> Dict[str, Any]:
             context=state.context,
             current_intent_spec=final_spec,
             validation_result=state.validation_result,
-            key_messages=key_messages,
+            messages=messages,
             needs_human_review=False
         )
     }

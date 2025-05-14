@@ -24,8 +24,8 @@ def process_new_intent(state: GraphState, llm: BaseChatModel) -> Dict[str, Any]:
         Updated graph state
     """
     # Add user message to visualization
-    key_messages = add_user_message(
-        state.key_messages, 
+    messages = add_user_message(
+        state.messages, 
         f"🔍 Intent to extract: {state.context.user_query}"
     )
     
@@ -45,8 +45,8 @@ def process_new_intent(state: GraphState, llm: BaseChatModel) -> Dict[str, Any]:
         )
         
         # Add assistant message to visualization
-        key_messages = add_assistant_message(
-            key_messages,
+        messages = add_assistant_message(
+            messages,
             f"📋 Extracted Intent:\n\n{format_intent_spec_for_display(intent_spec)}",
             metadata={"spec_id": intent_spec.spec_id}
         )
@@ -59,19 +59,19 @@ def process_new_intent(state: GraphState, llm: BaseChatModel) -> Dict[str, Any]:
             "state": GraphState(
                 context=updated_context,
                 current_intent_spec=intent_spec,
-                key_messages=key_messages
+                messages=messages
             )
         }
     
     except Exception as e:
         # Handle errors
         error_message = f"Error processing intent: {str(e)}"
-        key_messages = add_assistant_message(key_messages, f"❌ {error_message}")
+        messages = add_assistant_message(messages, f"❌ {error_message}")
         
         return {
             "state": GraphState(
                 context=state.context,
                 error_message=error_message,
-                key_messages=key_messages
+                messages=messages
             )
         }

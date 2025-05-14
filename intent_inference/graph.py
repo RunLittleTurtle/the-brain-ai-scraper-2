@@ -35,10 +35,11 @@ def create_intent_inference_graph(config: RunnableConfig) -> StateGraph:
     RunnableConfig argument (as required by LangGraph v0.4).
     """
     # ─── 1) Build the bare graph ───────────────────────────────────────────────
+    # Create the base graph with state model
     graph = StateGraph(GraphState)
 
     # ─── 2) Wire in your LLM ───────────────────────────────────────────────────
-    llm = ChatOpenAI(model_name="gpt-4", temperature=0)
+    llm = ChatOpenAI(model_name="gpt-4.1", temperature=0.2)
     def new_intent(state): return process_new_intent(state, llm)
     def feedback  (state): return process_feedback  (state, llm)
     def validate  (state): return validate_intent   (state, llm)
@@ -66,25 +67,22 @@ def create_intent_inference_graph(config: RunnableConfig) -> StateGraph:
     graph.add_edge("process_new_intent", "validate_intent")
     graph.add_edge("process_feedback",    "validate_intent")
 
-    # validation outcome
+    # Enhanced validation outcome routing
     graph.add_conditional_edges(
         "validate_intent",
         route_validation,
         {
-            "valid":   "prepare_for_human_review",
+            "valid": "prepare_for_human_review",
             "invalid": "revise_with_critique",
+            "needs_clarification": "revise_with_critique",  # Ask for clarification
+            "url_issue": "revise_with_critique",           # Fix URL issues
+            "missing_data": "revise_with_critique"         # Add missing fields
         }
     )
 
-    # if we revise, re‐dispatch NEW_INTENT vs FEEDBACK
-    graph.add_conditional_edges(
-        "revise_with_critique",
-        route_input,
-        {
-            InputType.NEW_INTENT.value: "process_new_intent",
-            InputType.FEEDBACK.value:    "process_feedback",
-        }
-    )
+    # After revising, go back to validation directly instead of process_new_intent
+    # This prevents the infinite recursion loop
+    graph.add_edge("revise_with_critique", "validate_intent")
 
     # human‐in‐the‐loop
     graph.add_conditional_edges(
@@ -100,8 +98,11 @@ def create_intent_inference_graph(config: RunnableConfig) -> StateGraph:
     graph.add_edge("finalize_intent",   END)
 
     # ─── 4) Compile with a MemorySaver ────────────────────────────────────────
-    saver = MemorySaver()
-    return graph.compile(checkpointer=saver)
+    # Explicitly use MemorySaver for local development
+    checkpointer = MemorySaver()
+    
+    # Compile with explicit checkpointer
+    return graph.compile(checkpointer=checkpointer)
 
 
 def create_initial_state(user_query: str) -> GraphState:

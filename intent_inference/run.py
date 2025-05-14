@@ -11,7 +11,8 @@ import argparse
 from typing import Dict, Any
 
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint import MemorySaver
+# Updated import for LangGraph 0.4+
+from langgraph.checkpoint.memory import MemorySaver
 
 from intent_inference.graph.workflow import create_intent_inference_graph, create_initial_state
 from intent_inference.graph.state import GraphState, ContextStore, IntentSpec
@@ -23,56 +24,69 @@ def main():
     parser.add_argument("query", nargs="?", help="User query to process")
     parser.add_argument("--studio", action="store_true", help="Start LangGraph Studio server")
     args = parser.parse_args()
-    
+
     if args.studio:
         # This is handled by the langgraph CLI
         print("Use 'langgraph dev' to start the LangGraph Studio server")
         sys.exit(0)
-    
+
     if not args.query:
         print("Please provide a user query to process")
         sys.exit(1)
-    
-    # Create the graph
+
+    # Create the graph with proper configuration
     llm = ChatOpenAI(
-        model="gpt-4", 
-        temperature=0
+        model="gpt-4.1",
+        temperature=0.2
     )
-    
+
+    # Create the graph with our LLM
     graph = create_intent_inference_graph(llm)
-    
+
     # Create initial state
     initial_state = create_initial_state(args.query)
-    
+
     # Run the graph
     print(f"Processing query: {args.query}")
-    
-    # Initialize memory saver for thread
-    memory_saver = MemorySaver()
-    
-    # Start the graph with initial state
-    thread = graph.start_with_state(initial_state, config={"configurable": {}})
-    
+
+    # Create the graph with memory saver for checkpointing
+    # Using explicit pattern for clarity as recommended with LangGraph 0.4+
+    checkpointer = MemorySaver()
+
+    # Start the graph with initial state and proper configuration
+    # In LangGraph 0.4+, we need to provide the thread configuration properly
+    thread = graph.start_with_state(
+        initial_state,
+        # The checkpointer is already configured in the compiled graph
+        # We just need to provide config with proper recursion limits
+        config={
+            "recursion_limit": 5,  # Consistent with graph.py
+            "configurable": {
+                "thread_id": "intent_inference_thread"
+            }
+        }
+    )
+
     # Continue until human review is needed or graph completes
     while True:
         # Get the current state
         state = thread.get_state()
-        
+
         # Print current state info
         print(f"\nCurrent state:")
         print(f"- Iteration: {state.context.iteration_count}")
         print(f"- Input type: {state.context.input_type}")
-        
+
         if state.current_intent_spec:
             print(f"- Current intent spec: {state.current_intent_spec.spec_id}")
             print(f"  - Target URLs: {state.current_intent_spec.target_urls_or_sites}")
             print(f"  - Data fields: {[f.field_name for f in state.current_intent_spec.data_to_extract]}")
-        
+
         if state.validation_result:
             print(f"- Validation: {'✓ Valid' if state.validation_result.is_valid else '✗ Invalid'}")
             if state.validation_result.issues:
                 print(f"  - Issues: {state.validation_result.issues}")
-        
+
         # If the graph is waiting for human review, ask for input
         if state.needs_human_review:
             print("\n🔍 Intent specification needs human review:")
@@ -83,16 +97,16 @@ def main():
                 for url in state.current_intent_spec.target_urls_or_sites:
                     health = state.current_intent_spec.url_health_status.get(url, "unknown")
                     print(f"- {url} ({'✓' if health == 'healthy' else '✗' if health == 'unhealthy' else '?'})")
-                
+
                 print("\nData to Extract:")
                 for field in state.current_intent_spec.data_to_extract:
                     print(f"- {field.field_name}: {field.description}")
-                
+
                 if state.current_intent_spec.constraints:
                     print("\nConstraints:")
                     for k, v in state.current_intent_spec.constraints.items():
                         print(f"- {k}: {v}")
-            
+
             # Ask for approval
             while True:
                 response = input("\nApprove this intent specification? (y/n): ").lower()
@@ -115,7 +129,7 @@ def main():
                     break
                 else:
                     print("Please enter 'y' or 'n'")
-            
+
             # Continue the thread
             thread.continue_()
         elif thread.is_running():
@@ -125,11 +139,11 @@ def main():
             # If the thread has ended, get the final state and break
             final_state = thread.get_state()
             print("\n✓ Intent inference completed!")
-            
+
             if final_state.current_intent_spec:
                 print(f"\nFinal Intent Specification ({final_state.current_intent_spec.spec_id}):")
                 print(json.dumps(final_state.current_intent_spec.model_dump(), indent=2))
-            
+
             break
 
 

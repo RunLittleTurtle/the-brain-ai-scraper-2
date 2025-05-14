@@ -82,14 +82,57 @@ class InputType(str, Enum):
     FEEDBACK = "feedback"
 
 
+class ValidationStatus(str, Enum):
+    """Enhanced validation status enum with more nuanced states."""
+    VALID = "valid"  # Fully valid, ready for human review
+    INVALID = "invalid"  # General invalid state
+    NEEDS_CLARIFICATION = "needs_clarification"  # User needs to provide more info
+    URL_ISSUE = "url_issue"  # Specific URL-related problems
+    MISSING_DATA = "missing_data"  # Critical data fields are missing
+
+
+class ValidationResult(BaseModel):
+    """Enhanced validation result with more detailed tracking."""
+    is_valid: bool
+    status: ValidationStatus = ValidationStatus.INVALID
+    issues: List[str] = Field(default_factory=list)
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    
+    @property
+    def needs_clarification(self) -> bool:
+        """Check if the validation result indicates a need for clarification."""
+        return self.status == ValidationStatus.NEEDS_CLARIFICATION
+    
+    @property
+    def has_url_issues(self) -> bool:
+        """Check if the validation result indicates URL issues."""
+        return self.status == ValidationStatus.URL_ISSUE
+    
+    @property
+    def missing_critical_data(self) -> bool:
+        """Check if the validation result indicates missing critical data."""
+        return self.status == ValidationStatus.MISSING_DATA
+
+
+class ValidationHistoryEntry(BaseModel):
+    """Entry in the validation history tracking."""
+    iteration: int
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    status: str  # String representation of ValidationStatus
+    issues: List[str] = Field(default_factory=list)
+    spec_id: Optional[str] = None
+
+
 class ContextStore(BaseModel):
-    """Context management for conversations."""
+    """Enhanced context management for conversations with history tracking."""
     user_query: str
     input_type: InputType = InputType.NEW_INTENT
     critique_hints: List[str] = Field(default_factory=list)
     last_spec: Optional[IntentSpec] = None
     iteration_count: int = 0
     conversation_id: str = Field(default_factory=lambda: f"conv_{uuid.uuid4().hex[:8]}")
+    # New fields for better history tracking
+    validation_history: List[ValidationHistoryEntry] = Field(default_factory=list)
     
     def increment_iteration(self) -> "ContextStore":
         """Increment the iteration counter."""
@@ -98,17 +141,43 @@ class ContextStore(BaseModel):
         return updated
     
     def add_critique_hints(self, new_hints: List[str]) -> "ContextStore":
-        """Add critique hints to the context."""
+        """Add critique hints to the context with deduplication."""
         updated = self.model_copy(deep=True)
         if not updated.critique_hints:
             updated.critique_hints = []
-        updated.critique_hints.extend(new_hints)
+            
+        # Deduplicate hints to avoid repeating the same critique
+        existing_hints_lower = [hint.lower() for hint in updated.critique_hints]
+        for hint in new_hints:
+            if hint.lower() not in existing_hints_lower:
+                updated.critique_hints.append(hint)
+                existing_hints_lower.append(hint.lower())
+                
         return updated
     
     def update_last_spec(self, spec: IntentSpec) -> "ContextStore":
         """Update the last spec in the context."""
         updated = self.model_copy(deep=True)
         updated.last_spec = spec
+        return updated
+        
+    def add_validation_history(self, validation_result: ValidationResult, spec_id: Optional[str] = None) -> "ContextStore":
+        """Add a validation result to the history."""
+        updated = self.model_copy(deep=True)
+        
+        # Create a new history entry
+        entry = ValidationHistoryEntry(
+            iteration=updated.iteration_count,
+            status=validation_result.status.value,
+            issues=validation_result.issues.copy() if validation_result.issues else [],
+            spec_id=spec_id
+        )
+        
+        # Add to history
+        if not updated.validation_history:
+            updated.validation_history = []
+        updated.validation_history.append(entry)
+        
         return updated
     
     def convert_to_feedback(self, feedback_query: str) -> "ContextStore":
@@ -119,10 +188,7 @@ class ContextStore(BaseModel):
         return updated
 
 
-class ValidationResult(BaseModel):
-    """Validation result from the judge chain."""
-    is_valid: bool
-    issues: List[str] = Field(default_factory=list)
+
 
 
 class Message(BaseModel):
@@ -144,8 +210,8 @@ class GraphState(BaseModel):
     human_approval: Optional[bool] = None
     error_message: Optional[str] = None
     
-    # For LangGraph Studio visualization
-    key_messages: List[Message] = Field(default_factory=list)
+    # For LangGraph Studio visualization - renamed for LangGraph Studio compatibility
+    messages: List[Message] = Field(default_factory=list)
     
     # Private state for sharing between nodes
     private_data: Dict[str, Any] = Field(default_factory=dict)

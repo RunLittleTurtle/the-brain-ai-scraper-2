@@ -24,21 +24,21 @@ def process_feedback(state: GraphState, llm: BaseChatModel) -> Dict[str, Any]:
         Updated graph state
     """
     # Add user message to visualization
-    key_messages = add_user_message(
-        state.key_messages, 
+    messages = add_user_message(
+        state.messages, 
         f"💬 Feedback received: {state.context.user_query}"
     )
     
     # Check if we have a last spec in context
     if state.context.last_spec is None:
         error_message = "Cannot process feedback without previous intent specification"
-        key_messages = add_assistant_message(key_messages, f"❌ {error_message}")
+        messages = add_assistant_message(messages, f"❌ {error_message}")
         
         return {
             "state": GraphState(
                 context=state.context,
                 error_message=error_message,
-                key_messages=key_messages
+                messages=messages
             )
         }
     
@@ -69,8 +69,8 @@ def process_feedback(state: GraphState, llm: BaseChatModel) -> Dict[str, Any]:
         updated_spec = state.context.last_spec.create_revision(**updates)
         
         # Add assistant message to visualization
-        key_messages = add_assistant_message(
-            key_messages,
+        messages = add_assistant_message(
+            messages,
             f"📝 Updated Intent Based on Feedback:\n\n{format_intent_spec_for_display(updated_spec)}",
             metadata={"spec_id": updated_spec.spec_id, "reasoning": llm_output.reasoning}
         )
@@ -83,19 +83,19 @@ def process_feedback(state: GraphState, llm: BaseChatModel) -> Dict[str, Any]:
             "state": GraphState(
                 context=updated_context,
                 current_intent_spec=updated_spec,
-                key_messages=key_messages
+                messages=messages
             )
         }
     
     except Exception as e:
         # Handle errors
         error_message = f"Error processing feedback: {str(e)}"
-        key_messages = add_assistant_message(key_messages, f"❌ {error_message}")
+        messages = add_assistant_message(messages, f"❌ {error_message}")
         
         return {
             "state": GraphState(
                 context=state.context,
                 error_message=error_message,
-                key_messages=key_messages
+                messages=messages
             )
         }

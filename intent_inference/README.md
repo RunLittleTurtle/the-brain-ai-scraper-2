@@ -105,7 +105,7 @@ python -m cli.app scrape "Find all product managers in Montreal on LinkedIn"
 
 ## Intent Specification
 
-The `IntentSpec` Pydantic model captures:
+The `IntentSpec` Pydantic model captures /Users/samuelaudette/Documents/code_projects/the-brain-ai-scraper-2/models/intent/intent_spec.py:
 
 - **Target URLs**: The websites to scrape
 - **Fields to Extract**: What data to collect

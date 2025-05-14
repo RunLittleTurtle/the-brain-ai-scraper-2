@@ -14,19 +14,19 @@ from langsmith.run_helpers import traceable
 from intent_inference.graph.state import GraphState, Message, IntentSpec
 
 
-def add_user_message(key_messages: List[Message], content: str, metadata: Optional[Dict[str, Any]] = None) -> List[Message]:
+def add_user_message(messages: List[Message], content: str, metadata: Optional[Dict[str, Any]] = None) -> List[Message]:
     """
     Add a user message to the key messages list.
     
     Args:
-        key_messages: Current list of messages
+        messages: Current list of messages
         content: Message content
         metadata: Optional metadata for the message
         
     Returns:
         Updated list with new message added
     """
-    new_messages = key_messages.copy()
+    new_messages = messages.copy()
     new_messages.append(
         Message(
             role="user",
@@ -38,19 +38,19 @@ def add_user_message(key_messages: List[Message], content: str, metadata: Option
     return new_messages
 
 
-def add_assistant_message(key_messages: List[Message], content: str, metadata: Optional[Dict[str, Any]] = None) -> List[Message]:
+def add_assistant_message(messages: List[Message], content: str, metadata: Optional[Dict[str, Any]] = None) -> List[Message]:
     """
     Add an assistant message to the key messages list.
     
     Args:
-        key_messages: Current list of messages
+        messages: Current list of messages
         content: Message content
         metadata: Optional metadata for the message
         
     Returns:
         Updated list with new message added
     """
-    new_messages = key_messages.copy()
+    new_messages = messages.copy()
     new_messages.append(
         Message(
             role="assistant",
@@ -62,19 +62,19 @@ def add_assistant_message(key_messages: List[Message], content: str, metadata: O
     return new_messages
 
 
-def add_system_message(key_messages: List[Message], content: str, metadata: Optional[Dict[str, Any]] = None) -> List[Message]:
+def add_system_message(messages: List[Message], content: str, metadata: Optional[Dict[str, Any]] = None) -> List[Message]:
     """
     Add a system message to the key messages list.
     
     Args:
-        key_messages: Current list of messages
+        messages: Current list of messages
         content: Message content
         metadata: Optional metadata for the message
         
     Returns:
         Updated list with new message added
     """
-    new_messages = key_messages.copy()
+    new_messages = messages.copy()
     new_messages.append(
         Message(
             role="system",
@@ -205,7 +205,7 @@ def create_studio_metadata(state: GraphState) -> Dict[str, Any]:
         "studio": {
             "state_type": "intent_inference",
             "iteration": state.context.iteration_count,
-            "messages": [msg.model_dump() for msg in state.key_messages],
+            "messages": [msg.model_dump() for msg in state.messages],
         }
     }
     

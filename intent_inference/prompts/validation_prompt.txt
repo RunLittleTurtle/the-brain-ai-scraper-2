@@ -32,22 +32,22 @@ URL Health: {"amazon.com": "healthy", "bestbuy.com": "healthy"}
 
 Assessment Example (Valid):
 ```json
-{
+{{
   "is_valid": true,
   "issues": []
-}
+}}
 ```
 
 Assessment Example (Invalid):
 ```json
-{
+{{
   "is_valid": false,
   "issues": [
-    "The 'product_title' field is too vague - need to specify what elements of the title are required",
+    "The 'product_title' field is too vague—need to specify what elements of the title are required",
     "Missing storage capacity specification which is critical for iPhone price comparison",
     "No mechanism specified to ensure the same iPhone 14 Pro model is compared across sites"
   ]
-}
+}}
 ```
 
 Now, evaluate the following intent specification:
