@@ -1,25 +1,31 @@
 """
-Human review router for intent inference graph.
+Router for human review results in the intent inference graph.
 
-This module provides a router for handling human review decisions
-in the intent inference graph.
+This module provides the route_human_review function which determines the next
+step in the graph based on the human review decision.
 """
-from typing import Dict, Literal, Any
-
 from intent_inference.graph.state import GraphState
 
 
-def route_human_review(state: GraphState) -> Literal["approved", "rejected", "pending"]:
+def route_human_review(state: GraphState) -> str:
     """
-    Route based on human approval status.
+    Route based on human review decision.
     
     Args:
-        state: Current graph state
-        
+        state: The current graph state
+    
     Returns:
-        Routing decision: "approved", "rejected", or "pending"
+        The edge name to follow: "approved", "rejected", or "pending"
     """
-    if state.human_approval is None:
+    # Check if we're still waiting for human review
+    if state.needs_human_review:
         return "pending"
     
-    return "approved" if state.human_approval else "rejected"
+    # Check the human approval flag
+    if state.human_approval is True:
+        return "approved"
+    elif state.human_approval is False:
+        return "rejected"
+    else:
+        # Default to pending if human_approval is None or unset
+        return "pending"

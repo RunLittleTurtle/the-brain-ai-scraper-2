@@ -1,6 +1,10 @@
 """
-Graph module for intent inference.
+Graph package for intent inference.
 
-This module contains the LangGraph implementation for intent extraction, 
-validation, and human-in-the-loop approval process.
+Contains the core components of the LangGraph workflow for intent inference.
 """
+
+from .state import GraphState
+from .graph import create_intent_inference_graph, create_initial_state
+
+__all__ = ["GraphState", "create_intent_inference_graph", "create_initial_state"]

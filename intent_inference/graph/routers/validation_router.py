@@ -1,39 +1,30 @@
 """
-Validation router for intent inference graph.
+Router for validation results in the intent inference graph.
 
-This module provides a router for handling validation results
-in the intent inference graph.
+This module provides the route_validation function which determines the next
+step in the graph based on the validation result.
 """
-from typing import Dict, Literal, Any
+from intent_inference.graph.state import GraphState
+from intent_inference.state import ValidationStatus
 
-from intent_inference.graph.state import GraphState, ValidationStatus
 
-
-def route_validation(state: GraphState) -> Literal["valid", "invalid", "needs_clarification", "url_issue", "missing_data"]:
+def route_validation(state: GraphState) -> str:
     """
-    Enhanced router based on the detailed validation status.
+    Route based on validation results.
     
     Args:
-        state: Current graph state
-        
+        state: The current graph state
+    
     Returns:
-        Routing decision with more nuanced options based on validation status
+        The edge name to follow: "valid" or "invalid"
     """
-    # Handle case with no validation result
-    if state.validation_result is None:
+    # Check if there is a validation result
+    if not state.validation_result:
+        # Default to invalid if no validation result
         return "invalid"
     
-    # If valid, easy path
+    # Route based on the validation status
     if state.validation_result.is_valid:
         return "valid"
-    
-    # Use the enhanced status for more nuanced routing
-    status_mapping = {
-        ValidationStatus.NEEDS_CLARIFICATION: "needs_clarification",
-        ValidationStatus.URL_ISSUE: "url_issue",
-        ValidationStatus.MISSING_DATA: "missing_data",
-        # Default fallback
-        ValidationStatus.INVALID: "invalid"
-    }
-    
-    return status_mapping.get(state.validation_result.status, "invalid")
+    else:
+        return "invalid"

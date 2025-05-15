@@ -2,11 +2,33 @@
   "title": "Intent Inference Graph",
   "python_version": "3.13",
   "env": ".env",
-  "dependencies": ["."],
+  "dependencies": [
+    "."
+  ],
   "graphs": {
     "intent_inference": {
-      "path": "intent_inference/graph.py:create_intent_inference_graph",
+      "path": "intent_inference/graph/graph.py:create_intent_inference_graph",
       "description": "Extract and validate intent from user queries"
+    }
+  },
+  "config": {
+    "app_address": "localhost:2024",
+    "host": "0.0.0.0",
+    "port": 2024,
+    "cors": {
+      "allow_origins": [
+        "*"
+      ],
+      "allow_methods": [
+        "*"
+      ],
+      "allow_headers": [
+        "*"
+      ],
+      "allow_credentials": true
+    },
+    "tracing": {
+      "langsmith": true
     }
   }
 }

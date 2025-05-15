@@ -1,158 +1,146 @@
 """
-Human review nodes for intent inference graph.
+Nodes for human review and approval of intent specifications.
 
-This module provides nodes for handling human review of intent specifications.
+This module provides the human_review node which handles the human review
+step in the intent inference workflow.
 """
-from typing import Dict, Any, List, Optional
+from typing import Any, Optional
 
+from intent_inference.state import Message
 from intent_inference.graph.state import GraphState
-from intent_inference.utils.visualization import add_system_message, add_assistant_message, format_intent_spec_for_display
 
 
-def prepare_for_human_review(state: GraphState) -> Dict[str, Any]:
+def human_review(state: GraphState) -> GraphState:
     """
-    Prepare intent for human review.
-    
-    This node sets the needs_human_review flag to pause the graph
-    execution until human input is received.
+    Prepare the intent specification for human review.
     
     Args:
-        state: Current graph state
-        
+        state: The current graph state
+    
     Returns:
-        Updated graph state
+        Updated graph state with human review request
     """
-    messages = state.messages
+    # Create a copy of the state to avoid mutations
+    state = state.model_copy(deep=True)
     
-    # Check if we have a spec to review
-    if state.current_intent_spec is None:
-        error_message = "Cannot prepare for human review without an intent specification"
-        messages = add_system_message(messages, f"❌ {error_message}")
-        
-        return {
-            "state": GraphState(
-                context=state.context,
-                error_message=error_message,
-                messages=messages,
-                needs_human_review=False
-            )
-        }
+    # Check if there is an intent spec to review
+    if not state.current_intent_spec:
+        state.error_message = "No intent specification to review"
+        state.messages.append(Message(
+            role="system",
+            content="⚠️ Error: No intent specification available for review"
+        ))
+        return state
     
-    # Add system message about human review
-    messages = add_system_message(
-        messages,
-        "👤 Waiting for human review and approval..."
+    # Check if validation has been performed
+    if not state.validation_result:
+        state.error_message = "Intent specification has not been validated"
+        state.messages.append(Message(
+            role="system",
+            content="⚠️ Error: Intent specification has not been validated"
+        ))
+        return state
+    
+    # Check if the intent spec is valid
+    if not state.validation_result.is_valid:
+        state.error_message = "Cannot review an invalid intent specification"
+        state.messages.append(Message(
+            role="system",
+            content="⚠️ Error: Cannot review an invalid intent specification"
+        ))
+        return state
+    
+    # Get the intent spec for formatting
+    intent_spec = state.current_intent_spec
+    
+    # Format a summary of the intent spec for review
+    summary = (
+        f"## Intent Specification Review\n\n"
+        f"**Original Query**: {intent_spec.original_user_query}\n\n"
+        f"**Target URLs/Sites**:\n"
     )
     
-    # Add the intent specification for review
-    messages = add_assistant_message(
-        messages,
-        f"📋 Please review this intent specification:\n\n{format_intent_spec_for_display(state.current_intent_spec)}",
-        metadata={"spec_id": state.current_intent_spec.spec_id, "for_review": True}
+    # Add URL list with health status
+    for url in intent_spec.target_urls_or_sites:
+        health = intent_spec.url_health_status.get(url, "unknown")
+        health_icon = "✅" if health == "healthy" else "⚠️"
+        summary += f"- {health_icon} {url}\n"
+    
+    # Add data fields
+    summary += "\n**Data to Extract**:\n"
+    for field in intent_spec.data_to_extract:
+        summary += f"- **{field.field_name}**: {field.description}\n"
+    
+    # Add constraints if any
+    if intent_spec.constraints:
+        summary += "\n**Constraints**:\n"
+        for key, value in intent_spec.constraints.items():
+            summary += f"- **{key}**: {value}\n"
+    
+    # Add review instructions
+    instructions = (
+        "\n## Review Instructions\n\n"
+        "Please review this intent specification and either approve it to proceed "
+        "with web scraping, or reject it for further refinement."
     )
     
-    # Return updated state with needs_human_review flag
-    return {
-        "state": GraphState(
-            context=state.context,
-            current_intent_spec=state.current_intent_spec,
-            validation_result=state.validation_result,
-            messages=messages,
-            needs_human_review=True
-        )
-    }
+    # Set the state for human review
+    state.needs_human_review = True
+    state.human_approval = None
+    
+    # Add messages for visualization
+    state.messages.append(Message(
+        role="assistant",
+        content=summary + instructions
+    ))
+    
+    return state
 
 
-def process_rejection(state: GraphState) -> Dict[str, Any]:
+def process_human_approval(state: GraphState, approved: bool, feedback: Optional[str] = None) -> GraphState:
     """
-    Process human rejection and prepare for revision.
+    Process human approval decision.
     
     Args:
-        state: Current graph state
-        
+        state: The current graph state
+        approved: Whether the human approved the intent specification
+        feedback: Optional feedback from the human
+    
     Returns:
-        Updated graph state
+        Updated graph state with human approval decision
     """
-    messages = state.messages
+    # Create a copy of the state to avoid mutations
+    state = state.model_copy(deep=True)
     
-    # Add rejection message
-    messages = add_system_message(
-        messages,
-        f"👤 Human rejected the intent specification."
-    )
+    # Set the human approval flag
+    state.human_approval = approved
     
-    if state.user_feedback:
-        messages = add_user_message(
-            messages,
-            f"💬 Rejection feedback: {state.user_feedback}"
-        )
-        
-        # Add feedback as critique hint
-        updated_context = state.context.add_critique_hints([state.user_feedback])
-        updated_context = updated_context.increment_iteration()
+    # Store the feedback if provided
+    if feedback:
+        state.user_feedback = feedback
+    
+    # Add message for visualization
+    if approved:
+        state.messages.append(Message(
+            role="human",
+            content="✅ Intent specification approved."
+        ))
+        state.messages.append(Message(
+            role="assistant",
+            content="Thank you! The intent specification has been approved and is ready for use."
+        ))
     else:
-        updated_context = state.context.increment_iteration()
+        feedback_msg = f"with feedback: {feedback}" if feedback else "without specific feedback"
+        state.messages.append(Message(
+            role="human",
+            content=f"❌ Intent specification rejected {feedback_msg}."
+        ))
+        state.messages.append(Message(
+            role="assistant",
+            content="I'll refine the intent specification based on your feedback."
+        ))
     
-    # Return updated state
-    return {
-        "state": GraphState(
-            context=updated_context,
-            current_intent_spec=state.current_intent_spec,
-            validation_result=None,  # Clear validation result
-            messages=messages,
-            needs_human_review=False,
-            human_approval=None  # Reset human approval
-        )
-    }
-
-
-def finalize_intent(state: GraphState) -> Dict[str, Any]:
-    """
-    Finalize approved intent.
+    # Reset the human review flag since we've processed the decision
+    state.needs_human_review = False
     
-    Args:
-        state: Current graph state
-        
-    Returns:
-        Updated graph state
-    """
-    messages = state.messages
-    
-    if state.current_intent_spec is None:
-        error_message = "Cannot finalize without an intent specification"
-        messages = add_system_message(messages, f"❌ {error_message}")
-        
-        return {
-            "state": GraphState(
-                context=state.context,
-                error_message=error_message,
-                messages=messages
-            )
-        }
-    
-    # Update status of intent spec
-    final_spec = state.current_intent_spec.model_copy(deep=True)
-    final_spec.validation_status = "user_approved"
-    
-    # Add system message about approval
-    messages = add_system_message(
-        messages,
-        f"✅ Intent specification approved by human reviewer!"
-    )
-    
-    messages = add_assistant_message(
-        messages,
-        f"📦 Final Intent Specification ({final_spec.spec_id}):\n\n{format_intent_spec_for_display(final_spec)}",
-        metadata={"final": True, "spec_id": final_spec.spec_id}
-    )
-    
-    # Return updated state
-    return {
-        "state": GraphState(
-            context=state.context,
-            current_intent_spec=final_spec,
-            validation_result=state.validation_result,
-            messages=messages,
-            needs_human_review=False
-        )
-    }
+    return state
